@@ -16,6 +16,7 @@
   const touchAttackButton = document.getElementById("touchAttackButton");
   const touchSkillButton = document.getElementById("touchSkillButton");
   const touchShadowButton = document.getElementById("touchShadowButton");
+  const touchGhostfireButton = document.getElementById("touchGhostfireButton");
   const roleOverlay = document.getElementById("roleOverlay");
   const roleActions = document.getElementById("roleActions");
   const roleDialogTitle = document.getElementById("roleDialogTitle");
@@ -70,6 +71,7 @@
       detention: { name: "挽留", rarity: "purple", detention: 1 },
       rampage: { name: "张狂", rarity: "purple" },
       trumpCard: { name: "底牌切换", rarity: "purple" },
+      confinedSpace: { name: "禁闭空间", rarity: "purple" },
       wanted: { name: "通缉", rarity: "blue" },
       hunt: { name: "猎步", rarity: "blue", speed: 1.035 },
       blade: { name: "锋刃", rarity: "blue", attackRange: 1.06 },
@@ -199,6 +201,20 @@
       hitBoostDuration: 1,
       fill: "#4f6044",
       core: "#d1b06a"
+    },
+    tuner: {
+      name: "调律师",
+      roleTag: "修机位",
+      rescuePriority: 4,
+      chaseDifficulty: 1.05,
+      repairDuration: 0.9,
+      vaultDuration: 1.06,
+      rescueDuration: 1.08,
+      healPower: 1,
+      crawlSpeed: 1,
+      hitBoostDuration: 1,
+      fill: "#e7d9f2",
+      core: "#9b76c8"
     }
   };
 
@@ -259,6 +275,30 @@
       fill: "#d8d0bd",
       core: "#7453a8"
     },
+    mirrorGhost: {
+      name: "镜鬼",
+      speed: 306,
+      attackRange: 92,
+      attackWindup: 0.14,
+      attackLunge: 52,
+      hitRecovery: 1,
+      missRecovery: 1,
+      vaultDuration: 1,
+      fill: "#0c2538",
+      core: "#65c9ff"
+    },
+    dancer: {
+      name: "舞者",
+      speed: 304,
+      attackRange: 94,
+      attackWindup: 0.14,
+      attackLunge: 50,
+      hitRecovery: 1,
+      missRecovery: 1,
+      vaultDuration: 1,
+      fill: "#3d254d",
+      core: "#f0b6e8"
+    },
     twinSword: {
       name: "双生剑仙",
       speed: 316,
@@ -273,8 +313,28 @@
     }
   };
 
-  const AI_SURVIVOR_CHARACTER_ORDER = ["clockmaker", "actor", "messenger", "apprentice", "medic", "perfumer", "general"];
-  const AI_HUNTER_CHARACTER_ORDER = ["standard", "brute", "lanternKeeper", "sawbone", "soulBinder"];
+  const AI_SURVIVOR_CHARACTER_ORDER = ["clockmaker", "actor", "messenger", "apprentice", "medic", "perfumer", "fencer", "general", "tuner"];
+  const AI_SURVIVOR_CHARACTER_WEIGHTS = {
+    clockmaker: 1,
+    actor: 1,
+    messenger: 1,
+    apprentice: 1,
+    medic: 1,
+    perfumer: 1,
+    fencer: 0.2,
+    general: 1,
+    tuner: 0.8
+  };
+  const AI_HUNTER_CHARACTER_ORDER = ["standard", "brute", "lanternKeeper", "sawbone", "soulBinder", "mirrorGhost", "dancer"];
+  const AI_HUNTER_CHARACTER_WEIGHTS = {
+    standard: 0.55,
+    brute: 0.55,
+    lanternKeeper: 1.65,
+    sawbone: 1,
+    soulBinder: 1.65,
+    mirrorGhost: 0.45,
+    dancer: 0.85
+  };
 
   const ATTACK_KEY = "j";
   const SKILL_KEY = "q";
@@ -284,7 +344,10 @@
   const MEDIC_ID = "medic";
   const FENCER_ID = "fencer";
   const GENERAL_ID = "general";
+  const TUNER_ID = "tuner";
   const TWIN_SWORD_ID = "twinSword";
+  const MIRROR_GHOST_ID = "mirrorGhost";
+  const DANCER_ID = "dancer";
   const PROFILE_UNLOCK_STORAGE_KEY = "asymmetric-chase-unlocks-v1";
   const PROFILE_TASK_STORAGE_KEY = "asymmetric-chase-unlock-tasks-v1";
   let developerUnlockAllCharacters = readDeveloperUnlockMode();
@@ -316,6 +379,12 @@
   const AI_RESCUE_FIRST_CHAIR_DANGER = 0.38;
   const AI_RESCUE_SECOND_CHAIR_DANGER = 0.82;
   const AI_RESCUE_HUNTER_NEAR_CHAIR = 300;
+  const AI_RESCUE_EMERGENCY_WINDOW = 0.035;
+  const AI_RESCUE_ATTACK_DODGE_DELAY = 220;
+  const AI_RESCUE_ASSIGNMENT_MAX_DISTANCE = 1100;
+  const AI_UPDATE_INTERVAL = 16;
+  const AI_TEAM_PLAN_INTERVAL = 800;
+  const AI_PALLET_MINDGAME_DURATION = 420;
   const CARRY_STRUGGLE_DURATION = 10500;
   const CARRY_ESCAPE_STUN = 1400;
   const RESCUE_SPEED_BOOST_DURATION = 1800;
@@ -331,18 +400,32 @@
   const MOVE_COLLISION_STEP = 8;
   const COLLISION_PUSH_EPSILON = 0.35;
   const AI_OBJECTIVE_ABORT_RANGE = 320;
+  const AI_GATE_OPEN_ABORT_RANGE = 220;
+  const AI_OPEN_GATE_PRIORITY_RANGE = 420;
+  const AI_GATE_ACTION_RANGE = 150;
+  const GATE_USE_RANGE = 176;
+  const GATE_POINT_USE_RANGE = 76;
+  const HUNTER_TARGET_LOCK_AFTER_HIT = 7600;
+  const HUNTER_TARGET_LOCK_MAX_DISTANCE = 980;
+  const HUNTER_TARGET_STICKY_BASE = 360;
+  const HUNTER_TARGET_STICKY_HIT_BONUS = 360;
   const AI_HEAL_MIN_INJURED_AGE = 9000;
   const AI_HEAL_TARGET_MIN_HUNTER_DISTANCE = 520;
   const AI_HEALER_MIN_HUNTER_DISTANCE = 540;
   const PRESENCE_TIER_ONE_HITS = 2;
   const PRESENCE_TIER_TWO_HITS = 5;
   const MESSENGER_ID = "messenger";
-  const PACKAGE_COOLDOWN = 25000;
+  const PACKAGE_COOLDOWN = 22000;
   const PACKAGE_STUN_DURATION = 1500;
+  const PACKAGE_HIT_BOOST_DURATION = 2000;
+  const PACKAGE_CHASE_HIT_COOLDOWN_REFUND = 8000;
+  const PACKAGE_RECOIL_DURATION = 180;
+  const PACKAGE_RECOIL_DISTANCE = 92;
   const PACKAGE_SPEED = 760;
   const PACKAGE_RANGE = 620;
   const PACKAGE_RADIUS = 13;
   const PACKAGE_HIT_RADIUS = 34;
+  const CONFINED_SPACE_WINDOW_BLOCK_DURATION = 10000;
   const APPRENTICE_ID = "apprentice";
   const PERFUMER_ID = "perfumer";
   const PERFUMER_SENSE_FAR_RANGE = 1200;
@@ -350,6 +433,7 @@
   const PERFUME_MIST_RADIUS = 400;
   const PERFUME_MIST_DURATION = 10000;
   const PERFUME_MIST_COOLDOWN = 20000;
+  const PERFUME_ALLY_STEALTH_DURATION = 5000;
   const PERFUME_HUNTER_SPEED_MULTIPLIER = 0.9;
   const PERFUME_SELF_SPEED_BOOST = 1.15;
   const PERFUME_ULTIMATE_CHARGES = 4;
@@ -372,6 +456,66 @@
   const GENERAL_RIDE_SPEED_BOOST = 1.4;
   const GENERAL_WHIP_COOLDOWN = 5000;
   const GENERAL_WHIP_SPEED_BOOST = 0.05;
+  const GENERAL_RAGE_MAX = 10;
+  const GENERAL_RAGE_GAIN_PER_SECOND = 2;
+  const GENERAL_RAGE_CHASE_RANGE = 760;
+  const GENERAL_RAM_WINDUP = 360;
+  const GENERAL_RAM_DURATION = 520;
+  const GENERAL_RAM_BACKSTEP_DISTANCE = 110;
+  const GENERAL_RAM_DISTANCE = 360;
+  const GENERAL_RAM_HIT_RANGE = 82;
+  const GENERAL_RAM_KNOCKBACK = 190;
+  const GENERAL_RAM_WALL_STUN = 1700;
+  const TUNER_RESONANCE_MAX = 100;
+  const TUNER_RESONANCE_PER_SECOND = 4.5;
+  const TUNER_CALIBRATION_SUCCESS_RESONANCE = 12;
+  const TUNER_CALIBRATION_PERFECT_RESONANCE = 20;
+  const TUNER_ECHO_COST = 60;
+  const TUNER_ECHO_COOLDOWN = 10000;
+  const TUNER_CIPHER_TUNE_COOLDOWN = 15000;
+  const TUNER_ECHO_LENGTH = 260;
+  const TUNER_ECHO_DURATION = 5000;
+  const TUNER_ECHO_THICKNESS = 18;
+  const TUNER_ECHO_SLOW_DURATION = 1000;
+  const TUNER_ECHO_SLOW_MULTIPLIER = 0.5;
+  const TUNER_SORROW_CALIBRATION_COOLDOWN = 30000;
+  const TUNER_SORROW_CALIBRATION_COUNT = 3;
+  const MIRROR_RIFT_RADIUS = 52;
+  const MIRROR_RIFT_TRIGGER_RADIUS = 44;
+  const MIRROR_RIFT_MAX = 8;
+  const MIRROR_RIFT_TELEPORT_COOLDOWN = 1000;
+  const MIRROR_RIFT_SURVIVOR_TELEPORT_COOLDOWN = 5000;
+  const MIRROR_RIFT_NO_HEARTBEAT_DELAY = 30000;
+  const MIRROR_RIFT_NO_HEARTBEAT_SPAWN_RADIUS = 96;
+  const MIRROR_CURTAIN_COOLDOWN = 20000;
+  const MIRROR_CURTAIN_DURATION = 18000;
+  const MIRROR_CURTAIN_MIN_LENGTH = 80;
+  const MIRROR_CURTAIN_MAX_LENGTH = 360;
+  const MIRROR_CURTAIN_THICKNESS = 18;
+  const MIRROR_LIGHT_COOLDOWN = 36000;
+  const MIRROR_LIGHT_RADIUS = 160;
+  const MIRROR_LIGHT_BLIND_DURATION = 2600;
+  const AI_MIRROR_CURTAIN_PLACE_MIN_RANGE = 150;
+  const AI_MIRROR_CURTAIN_PLACE_MAX_RANGE = 560;
+  const AI_MIRROR_CURTAIN_LENGTH = 240;
+  const DANCE_EROSION_MAX = 3;
+  const DANCE_EROSION_INTERACTION_MULTIPLIER = 0.9;
+  const DANCE_STEP_WINDUP = 600;
+  const DANCE_STEP_DISTANCE = 188;
+  const DANCE_POINT_DURATION = 12000;
+  const DANCE_LINE_CONNECT_DELAY = 400;
+  const DANCE_POINT_CAST_RANGE = 520;
+  const DANCE_LINE_DURATION = 5000;
+  const DANCE_LINE_THICKNESS = 18;
+  const DANCE_SPIN_DISTANCE = 132;
+  const DANCE_SPIN_COOLDOWN = 7000;
+  const INFINITE_DANCE_DURATION = 15000;
+  const INFINITE_DANCE_COOLDOWN = 50000;
+  const INFINITE_DANCE_STEP_COOLDOWN = 3000;
+  const INFINITE_DANCE_SPIN_COOLDOWN = 2000;
+  const AI_DANCE_STEP_MIN_RANGE = 120;
+  const AI_DANCE_STEP_MAX_RANGE = 330;
+  const AI_DANCE_POINT_AVOID_RANGE = 360;
   const FLYWHEEL_DURATION = 180;
   const FLYWHEEL_DISTANCE = 120;
   const FLYWHEEL_COOLDOWN = 50000;
@@ -393,7 +537,7 @@
   const SOUL_LAMP_HUNTER_SPEED_BOOST = 1.2;
   const SOUL_LAMP_SURVIVOR_VAULT_SLOWDOWN = 1.1;
   const SOUL_LAMP_LIMIT = 2;
-  const SOUL_LAMP_COOLDOWN = 20000;
+  const SOUL_LAMP_COOLDOWN = 8000;
   const SOUL_LAMP_SHADOW_TELEPORT_COOLDOWN = 30000;
   const SOUL_LAMP_ALERT_COOLDOWN = 4000;
   const SOUL_LAMP_ALERT_DURATION = 2400;
@@ -402,21 +546,30 @@
   const SOUL_LAMP_DISMANTLE_RANGE = 90;
   const SOUL_LAMP_AI_DISMANTLE_RANGE = 230;
   const SOUL_LAMP_DISMANTLE_DURATION = 4000;
+  const GHOSTFIRE_COOLDOWN = 16000;
+  const GHOSTFIRE_RANGE = 480;
+  const GHOSTFIRE_SPEED = 820;
+  const GHOSTFIRE_RADIUS = 12;
+  const GHOSTFIRE_DAMAGE = 0.5;
   const REPAIR_CALIBRATION_FIRST_MIN = 7000;
   const REPAIR_CALIBRATION_FIRST_MAX = 10000;
   const REPAIR_CALIBRATION_INTERVAL_MIN = 14000;
   const REPAIR_CALIBRATION_INTERVAL_MAX = 20000;
   const REPAIR_CALIBRATION_DURATION = 2200;
-  const REPAIR_CALIBRATION_SUCCESS_BONUS = 0.05;
-  const REPAIR_CALIBRATION_PERFECT_BONUS = 0.08;
+  const REPAIR_CALIBRATION_SUCCESS_BONUS = 0.02;
+  const REPAIR_CALIBRATION_PERFECT_BONUS = 0.05;
   const REPAIR_CALIBRATION_FAIL_PENALTY = 0.05;
+  const REPAIR_CALIBRATION_FAIL_STUN_DURATION = 1200;
   const REPAIR_CALIBRATION_SUCCESS_SIZE = 0.24;
   const REPAIR_CALIBRATION_PERFECT_SIZE = 0.08;
+  const AI_REPAIR_CALIBRATION_PERFECT_CHANCE = 0.2;
+  const AI_REPAIR_CALIBRATION_FAIL_CHANCE = 0.1;
   const CLOCKMAKER_CALIBRATION_RANGE_MULTIPLIER = 0.85;
   const CLOCKMAKER_CALIBRATION_BONUS = 0.1;
   const TIME_REWIND_COOLDOWN = 30000;
   const TIME_REWIND_WINDOW = 10000;
   const TIME_REWIND_STEALTH_DURATION = 3000;
+  const TIME_REWIND_BOOST_DURATION = 2000;
   const MAGIC_SHOW_COOLDOWN = 25000;
   const ACTOR_HIT_STEALTH_DURATION = 3000;
   const ACTOR_HIT_SPEED_BOOST = 1.15;
@@ -452,6 +605,8 @@
   const SOUL_SIPHON_FAIL_SLOW = 0.9;
   const SOUL_SIPHON_FAIL_DURATION = 3000;
   const SOUL_SIPHON_COOLDOWN = 25000;
+  const AI_SOUL_SIPHON_MIN_RANGE = 170;
+  const AI_SOUL_SIPHON_MAX_RANGE = 760;
   const BORROW_SOUL_DURATION = 15000;
   const BORROW_SOUL_COOLDOWN = 50000;
   const BORROW_SOUL_SPEED_PER_MARK = 0.03;
@@ -612,6 +767,9 @@
     nextMagicShowAt: 0,
     nextStitchPackAt: 0,
     nextPerfumeMistAt: 0,
+    nextTunerEchoAt: 0,
+    nextTunerCipherTuneAt: 0,
+    nextTunerSorrowCalibrationAt: 0,
     nextFencerLungeAt: 0,
     nextMedicAdrenalineAt: 0,
     nextFlywheelAt: 0,
@@ -622,8 +780,13 @@
     generalRideUntil: 0,
     generalRideWhips: 0,
     nextGeneralWhipAt: 0,
+    generalRage: 0,
+    mirrorTeleportReadyAt: 0,
+    mirrorBlindUntil: 0,
+    mirrorNoHeartbeatSince: 0,
     perfumeBoostUntil: 0,
     perfumeUltimateCharges: 0,
+    tunerResonance: 0,
     fencerStrideMarks: [],
     fencerLastSprintAngle: null,
     fencerNextStrideAt: 0,
@@ -673,6 +836,16 @@
     trumpCardSelecting: false,
     trumpCardSelectionUntil: 0,
     excitementGuardUntil: 0,
+    mirrorTeleportReadyAt: 0,
+    mirrorBlindUntil: 0,
+    mirrorNoHeartbeatSince: 0,
+    nextMirrorCurtainAt: 0,
+    nextMirrorLightAt: 0,
+    nextDanceStepAt: 0,
+    nextDanceSpinAt: 0,
+    nextInfiniteDanceAt: 0,
+    infiniteDanceUntil: 0,
+    nextGhostfireAt: 0,
     nextShadowTeleportAt: 0,
     nextSawDashAt: 0,
     nextSoulSiphonAt: 0,
@@ -696,6 +869,9 @@
     angle: Math.PI,
     status: "chasing",
     target: null,
+    targetLock: null,
+    targetLockUntil: 0,
+    lastTargetHitAt: 0,
     blindWanderAngle: Math.PI,
     nextBlindWanderTurnAt: 0,
     lastKnownTargetX: null,
@@ -817,6 +993,7 @@
   let height = 0;
   let dpr = 1;
   let lastTime = performance.now();
+  let lastAIUpdateAt = lastTime;
   let chasePulseUntil = 0;
   let selectedRole = null;
   let pendingRole = null;
@@ -850,18 +1027,32 @@
   let activeShiftPortals = null;
   let assistListenTargets = [];
   let finalCipherGuard = null;
+  let aiTeamPlan = { until: 0, rescuer: null, gateOpener: null, repairLead: null };
   let packageProjectileId = 0;
   let packageAim = null;
   let lastAimPointer = null;
   let stitchPackDropId = 0;
   let actorDecoyId = 0;
   let perfumeMistId = 0;
+  let mirrorRiftId = 0;
+  let mirrorCurtainId = 0;
+  let collisionRectsCache = null;
+  let danceLineId = 0;
+  let pendingDancePoint = null;
+  let pendingDanceLine = null;
+  let dancePointAim = null;
+  let mirrorCurtainAim = null;
   const soulLamps = [];
   const assistPeeperWards = [];
   const packageProjectiles = [];
+  const ghostfireProjectiles = [];
   const stitchPackDrops = [];
   const actorDecoys = [];
   const perfumeMists = [];
+  const tunerEchoLines = [];
+  const mirrorRifts = [];
+  const mirrorCurtains = [];
+  const danceLines = [];
   const twinShadowZones = [];
   const twinSwordProjectiles = [];
   const DEVICE_ASSET_ROOT = `${window.location.pathname.includes("/demos/") ? "../" : "./"}assets/devices/`;
@@ -873,7 +1064,7 @@
     hatchOpen: "hatch-open.png"
   });
   const CHARACTER_ASSET_ROOT = `${window.location.pathname.includes("/demos/") ? "../" : "./"}assets/游戏图样/角色/optimized/`;
-  const CHARACTER_ASSET_VERSION = "q512-20260626-general-smallman";
+  const CHARACTER_ASSET_VERSION = "q512-20260704-general-redesign";
   const CHARACTER_SPRITE_CACHE = {};
   const CHARACTER_WARMUP_QUEUE = [];
   let characterWarmupScheduled = false;
@@ -885,6 +1076,8 @@
     medic: "军医Q版.png",
     perfumer: "调香师Q版.png",
     fencer: "击剑手Q版.png",
+    general: "将军.png",
+    generalRide: "将军骑马.png",
     lanternKeeper: "提灯人Q版.png",
     sawbone: "锯骨Q版.png",
     soulBinder: "引魂师Q版.png",
@@ -967,6 +1160,8 @@
       id,
       name,
       theme,
+      width: world.width,
+      height: world.height,
       walls: walls.map(cloneMapItem),
       pallets: pallets.map(cloneMapItem),
       windows: windows.map(cloneMapItem),
@@ -978,6 +1173,201 @@
   }
 
   function createHospitalMapLayout() {
+    const layout = captureCurrentMapLayout("abandonedHospital", "废弃医院", "hospital");
+    expandHospitalSoutheastLot(layout);
+    return layout;
+  }
+
+  function expandHospitalSoutheastLot(layout) {
+    const border = 54;
+    layout.width = 3000;
+    layout.height = 2200;
+    const internalWalls = layout.walls.slice(4);
+    layout.walls = [
+      rect(0, 0, layout.width, border),
+      rect(0, layout.height - border, layout.width, border),
+      rect(0, 0, border, layout.height),
+      rect(layout.width - border, 0, border, layout.height)
+    ].concat(internalWalls);
+    relocateHospitalCenterStructures(layout);
+    addHospitalCornerBuilding(layout, 1170, 860);
+    addHospitalLotPallet(layout, 720, 1420, 82, 0);
+    addHospitalLotPallet(layout, 980, 1530, 78, Math.PI / 2);
+    addHospitalLotPallet(layout, 2180, 880, 86, 0);
+    addHospitalLotPallet(layout, 2600, 1120, 82, Math.PI / 2);
+    layout.walls.push(
+      rect(300, 1440, 210, 46),
+      rect(530, 1660, 230, 42),
+      rect(2020, 920, 46, 180),
+      rect(2740, 760, 46, 190)
+    );
+    removeHospitalPalletWallOverlaps(layout);
+    relocateHospitalBlockedRepairPoints(layout);
+    relocateHospitalBlockedChairs(layout);
+  }
+
+  function relocateHospitalBlockedRepairPoints(layout) {
+    layout.repairPoints.forEach((point) => {
+      if (!isHospitalRepairPointBlocked(layout, point.x, point.y)) return;
+      const destination = findHospitalRepairRelocation(layout, point);
+      if (!destination) return;
+      point.x = destination.x;
+      point.y = destination.y;
+    });
+  }
+
+  function isHospitalRepairPointBlocked(layout, x, y) {
+    const clearance = 78;
+    return layout.walls.some((wall) => x + clearance > wall.x && x - clearance < wall.x + wall.w && y + clearance > wall.y && y - clearance < wall.y + wall.h);
+  }
+
+  function findHospitalRepairRelocation(layout, repairPoint) {
+    const candidates = [];
+    for (let y = 180; y <= layout.height - 180; y += 160) {
+      for (let x = 180; x <= layout.width - 180; x += 160) {
+        if (isHospitalRepairPointBlocked(layout, x, y)) continue;
+        if (layout.repairPoints.some((other) => other !== repairPoint && Math.hypot(other.x - x, other.y - y) < 340)) continue;
+        if (layout.exitGates.some((gate) => Math.hypot(gate.x - x, gate.y - y) < 220)) continue;
+        if (Math.hypot(layout.hatch.x - x, layout.hatch.y - y) < 190) continue;
+        if (layout.chairs.some((chairItem) => Math.hypot(chairItem.x - x, chairItem.y - y) < 120)) continue;
+        if (layout.windows.concat(layout.pallets).some((item) => Math.hypot(item.x - x, item.y - y) < Math.max(item.w, item.h) * 0.5 + 94)) continue;
+        candidates.push({ x, y });
+      }
+    }
+    return shuffled(candidates)[0] || null;
+  }
+
+  function relocateHospitalBlockedChairs(layout) {
+    layout.chairs.forEach((chairItem) => {
+      if (!isHospitalRepairPointBlocked(layout, chairItem.x, chairItem.y)) return;
+      const destination = findHospitalChairRelocation(layout, chairItem);
+      if (!destination) return;
+      chairItem.x = destination.x;
+      chairItem.y = destination.y;
+    });
+  }
+
+  function findHospitalChairRelocation(layout, chairItem) {
+    const candidates = [];
+    for (let y = 160; y <= layout.height - 160; y += 160) {
+      for (let x = 160; x <= layout.width - 160; x += 160) {
+        if (isHospitalRepairPointBlocked(layout, x, y)) continue;
+        if (layout.chairs.some((other) => other !== chairItem && Math.hypot(other.x - x, other.y - y) < 180)) continue;
+        if (layout.repairPoints.some((point) => Math.hypot(point.x - x, point.y - y) < 150)) continue;
+        if (layout.exitGates.some((gate) => Math.hypot(gate.x - x, gate.y - y) < 190)) continue;
+        if (Math.hypot(layout.hatch.x - x, layout.hatch.y - y) < 160) continue;
+        if (layout.windows.concat(layout.pallets).some((item) => Math.hypot(item.x - x, item.y - y) < Math.max(item.w, item.h) * 0.5 + 76)) continue;
+        candidates.push({ x, y });
+      }
+    }
+    return shuffled(candidates)[0] || null;
+  }
+
+  function removeHospitalPalletWallOverlaps(layout) {
+    const removedSupportIds = new Set();
+    layout.pallets = layout.pallets.filter((pallet) => {
+      const vertical = Math.abs(Math.sin(pallet.angle || 0)) > 0.7;
+      const halfWidth = vertical ? pallet.h * 0.5 : pallet.w * 0.5;
+      const halfHeight = vertical ? pallet.w * 0.5 : pallet.h * 0.5;
+      const overlapsWall = layout.walls.some((wall) => {
+        const overlapX = Math.min(pallet.x + halfWidth, wall.x + wall.w) - Math.max(pallet.x - halfWidth, wall.x);
+        const overlapY = Math.min(pallet.y + halfHeight, wall.y + wall.h) - Math.max(pallet.y - halfHeight, wall.y);
+        const longOverlap = vertical ? overlapY : overlapX;
+        const thickOverlap = vertical ? overlapX : overlapY;
+        return longOverlap > 16 && thickOverlap > 3;
+      });
+      if (overlapsWall && pallet.supportId) removedSupportIds.add(pallet.supportId);
+      return !overlapsWall;
+    });
+    if (removedSupportIds.size > 0) {
+      layout.walls = layout.walls.filter((wall) => !removedSupportIds.has(wall.supportForPallet));
+    }
+  }
+
+  function relocateHospitalCenterStructures(layout) {
+    const source = { left: 1000, top: 440, right: 2060, bottom: 1220 };
+    const target = { x: 1880, y: 1410 };
+    const shiftX = target.x - source.left;
+    const shiftY = target.y - source.top;
+    ["walls", "pallets", "windows"].forEach((key) => {
+      const moved = [];
+      layout[key] = layout[key].filter((item) => {
+        const centerX = item.x + (item.w || 0) * 0.5;
+        const centerY = item.y + (item.h || 0) * 0.5;
+        const inside = centerX >= source.left && centerX <= source.right && centerY >= source.top && centerY <= source.bottom;
+        if (inside) moved.push(item);
+        return !inside;
+      });
+      layout[key].push(...moved.map((item) => ({ ...item, x: item.x + shiftX, y: item.y + shiftY })));
+    });
+  }
+
+  function addHospitalLotPallet(layout, x, y, width, angle) {
+    const supportId = `hospital-lot-pallet-${layout.pallets.length}`;
+    layout.pallets.push({ ...prop(x, y, width, 10, angle, "standing"), supportId });
+    const sideLength = 76;
+    const thickness = 22;
+    const supportWall = (wallX, wallY, wallWidth, wallHeight) => ({ ...rect(wallX, wallY, wallWidth, wallHeight), supportForPallet: supportId });
+    if (Math.abs(angle - Math.PI / 2) < 0.1) {
+      layout.walls.push(
+        supportWall(x - thickness / 2, y - width / 2 - sideLength - 12, thickness, sideLength),
+        supportWall(x - thickness / 2, y + width / 2 + 12, thickness, sideLength)
+      );
+      return;
+    }
+    layout.walls.push(
+      supportWall(x - width / 2 - sideLength - 12, y - thickness / 2, sideLength, thickness),
+      supportWall(x + width / 2 + 12, y - thickness / 2, sideLength, thickness)
+    );
+  }
+
+  function addHospitalCornerBuilding(layout, originX = 2240, originY = 1620) {
+    const shiftX = originX - 2240;
+    const shiftY = originY - 1620;
+    const wall = (x, y, w, h) => rect(x + shiftX, y + shiftY, w, h);
+    const window = (x, y, w, h, angle) => prop(x + shiftX, y + shiftY, w, h, angle, "window");
+    layout.walls.push(
+      wall(2240, 1620, 260, 54),
+      wall(2618, 1620, 286, 54),
+      wall(2240, 2060, 260, 54),
+      wall(2618, 2060, 286, 54),
+      wall(2240, 1620, 54, 180),
+      wall(2240, 1918, 54, 196),
+      wall(2850, 1620, 54, 494),
+      wall(2420, 1780, 370, 42),
+      wall(2420, 1940, 42, 130),
+      wall(2660, 1940, 42, 130)
+    );
+    layout.windows.push(
+      window(2559, 1626, 118, 44, 0),
+      window(2250, 1859, 44, 118, 0)
+    );
+    addHospitalInteriorPallet(layout, 2670 + shiftX, 1725 + shiftY, 84, 0);
+    addHospitalInteriorPallet(layout, 2355 + shiftX, 1915 + shiftY, 78, Math.PI / 2);
+    addHospitalInteriorPallet(layout, 2775 + shiftX, 1915 + shiftY, 78, Math.PI / 2);
+    addHospitalInteriorPallet(layout, 2561 + shiftX, 1998 + shiftY, 82, 0);
+  }
+
+  function addHospitalInteriorPallet(layout, x, y, width, angle) {
+    const supportId = `hospital-interior-pallet-${layout.pallets.length}`;
+    layout.pallets.push({ ...prop(x, y, width, 10, angle, "standing"), supportId });
+    const sideLength = 42;
+    const thickness = 20;
+    const supportWall = (wallX, wallY, wallWidth, wallHeight) => ({ ...rect(wallX, wallY, wallWidth, wallHeight), supportForPallet: supportId });
+    if (Math.abs(angle - Math.PI / 2) < 0.1) {
+      layout.walls.push(
+        supportWall(x - thickness / 2, y - width / 2 - sideLength - 10, thickness, sideLength),
+        supportWall(x - thickness / 2, y + width / 2 + 10, thickness, sideLength)
+      );
+      return;
+    }
+    layout.walls.push(
+      supportWall(x - width / 2 - sideLength - 10, y - thickness / 2, sideLength, thickness),
+      supportWall(x + width / 2 + 10, y - thickness / 2, sideLength, thickness)
+    );
+  }
+
+  function createLegacyHospitalMapLayout() {
     return {
       id: "abandonedHospital",
       name: "废弃医院",
@@ -1088,6 +1478,10 @@
   }
 
   function applyMapLayout(layout) {
+    world.width = layout.width || BASE_WORLD_WIDTH;
+    world.height = layout.height || BASE_WORLD_HEIGHT;
+    nav.cols = Math.ceil(world.width / nav.cell);
+    nav.rows = Math.ceil(world.height / nav.cell);
     replaceMapArray(walls, layout.walls);
     replaceMapArray(pallets, layout.pallets);
     replaceMapArray(windows, layout.windows);
@@ -1099,6 +1493,7 @@
     hatch.spawned = false;
     hatch.opened = false;
     currentMapLayout = layout;
+    invalidateCollisionRects();
   }
 
   function applyRandomMapLayout() {
@@ -1242,6 +1637,9 @@
       nextMagicShowAt: 0,
       nextStitchPackAt: 0,
       nextPerfumeMistAt: 0,
+      nextTunerEchoAt: 0,
+      nextTunerCipherTuneAt: 0,
+      nextTunerSorrowCalibrationAt: 0,
       nextFencerLungeAt: 0,
       nextMedicAdrenalineAt: 0,
       nextFlywheelAt: 0,
@@ -1252,8 +1650,11 @@
       generalRideUntil: 0,
       generalRideWhips: 0,
       nextGeneralWhipAt: 0,
+      generalRage: 0,
+      mirrorTeleportReadyAt: 0,
       perfumeBoostUntil: 0,
       perfumeUltimateCharges: 0,
+      tunerResonance: 0,
       fencerStrideMarks: [],
       fencerLastSprintAngle: null,
       fencerNextStrideAt: 0,
@@ -1315,8 +1716,12 @@
     return actor && actor.characterId === GENERAL_ID;
   }
 
+  function isTuner(actor) {
+    return actor && actor.characterId === TUNER_ID;
+  }
+
   function hasSurvivorSkill(actor) {
-    return isMessenger(actor) || isApprentice(actor) || isClockmaker(actor) || isActor(actor) || isMedic(actor) || isPerfumer(actor) || isFencer(actor) || isGeneral(actor);
+    return isMessenger(actor) || isApprentice(actor) || isClockmaker(actor) || isActor(actor) || isMedic(actor) || isPerfumer(actor) || isFencer(actor) || isGeneral(actor) || isTuner(actor);
   }
 
   function getSurvivorMultiplier(actor, key, fallback = 1) {
@@ -1481,6 +1886,14 @@
     return hunter.characterId === SOUL_BINDER_ID;
   }
 
+  function isMirrorGhost() {
+    return hunter.characterId === MIRROR_GHOST_ID;
+  }
+
+  function isDancer() {
+    return hunter.characterId === DANCER_ID;
+  }
+
   function isTwinSword() {
     return hunter.characterId === TWIN_SWORD_ID;
   }
@@ -1506,7 +1919,587 @@
   }
 
   function hunterHasSkill() {
-    return isLanternKeeper() || isSawbone() || isTwinSword() || isSoulBinder();
+    return isLanternKeeper() || isSawbone() || isTwinSword() || isSoulBinder() || isMirrorGhost() || isDancer();
+  }
+
+  function getSegmentNormal(segment) {
+    const dx = segment.x2 - segment.x1;
+    const dy = segment.y2 - segment.y1;
+    const length = Math.hypot(dx, dy);
+    if (length < 0.001) return { x: 0, y: -1 };
+    return { x: -dy / length, y: dx / length };
+  }
+
+  function createMirrorRiftAt(actor, now = performance.now()) {
+    if (!isMirrorGhost() || !actor) return;
+    const safe = findNearestSafePosition(actor.x, actor.y, Math.max(12, (actor.radius || 22) * 0.65));
+    pushMirrorRift(safe.x, safe.y, now);
+    chasePulseUntil = now + 260;
+  }
+
+  function createMirrorRiftNearSurvivor(survivor, now = performance.now()) {
+    if (!isMirrorGhost() || !survivor) return false;
+    const angle = Math.random() * Math.PI * 2;
+    const distance = 36 + Math.random() * MIRROR_RIFT_NO_HEARTBEAT_SPAWN_RADIUS;
+    const safe = findNearestSafePosition(
+      survivor.x + Math.cos(angle) * distance,
+      survivor.y + Math.sin(angle) * distance,
+      Math.max(12, survivor.radius * 0.65)
+    );
+    pushMirrorRift(safe.x, safe.y, now);
+    chasePulseUntil = now + 260;
+    return true;
+  }
+
+  function pushMirrorRift(x, y, now = performance.now()) {
+    mirrorRifts.push({ id: ++mirrorRiftId, x, y, createdAt: now });
+    while (mirrorRifts.length > MIRROR_RIFT_MAX) mirrorRifts.shift();
+  }
+
+  function updateMirrorNoHeartbeatRifts(now) {
+    if (!isMirrorGhost()) return;
+    getSurvivors().forEach((survivor) => {
+      if (survivor.escaped || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") {
+        survivor.mirrorNoHeartbeatSince = now;
+        return;
+      }
+      if (isSurvivorInHeartbeat(survivor)) {
+        survivor.mirrorNoHeartbeatSince = now;
+        return;
+      }
+      if (!survivor.mirrorNoHeartbeatSince) survivor.mirrorNoHeartbeatSince = now;
+      if (now - survivor.mirrorNoHeartbeatSince < MIRROR_RIFT_NO_HEARTBEAT_DELAY) return;
+      if (createMirrorRiftNearSurvivor(survivor, now)) survivor.mirrorNoHeartbeatSince = now;
+    });
+  }
+
+  function updateMirrorRifts(now) {
+    if (mirrorRifts.length === 0) return;
+    if (mirrorRifts.length >= 2) {
+      getSurvivors().forEach((survivor) => {
+        if (survivor.escaped || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return;
+        maybeTeleportActorThroughMirrorRift(survivor, now);
+      });
+    }
+    if (!hunter.carrying) maybeTeleportActorThroughMirrorRift(hunter, now);
+  }
+
+  function maybeTeleportActorThroughMirrorRift(actor, now, forcedSource = null, ignoreCooldown = false) {
+    if (!actor || !ignoreCooldown && now < (actor.mirrorTeleportReadyAt || 0)) return false;
+    if (actor !== hunter && actor.state === "downed") return false;
+    const source = forcedSource || getMirrorRiftSourceForActor(actor);
+    if (!source) return false;
+    const target = getMirrorRiftExitForActor(actor, source);
+    if (!target && forcedSource) {
+      const angle = Math.random() * Math.PI * 2;
+      const offset = (actor.radius || 20) + 18;
+      return teleportActorToMirrorPoint(actor, {
+        x: forcedSource.x + Math.cos(angle) * offset,
+        y: forcedSource.y + Math.sin(angle) * offset
+      }, now);
+    }
+    if (!target) return false;
+    return teleportActorToMirrorPoint(actor, target, now);
+  }
+
+  function getMirrorRiftSourceForActor(actor) {
+    if (!actor) return null;
+    return mirrorRifts.find((rift) => distanceBetween(actor, rift) <= MIRROR_RIFT_TRIGGER_RADIUS + (actor.radius || 0) * 0.25) || null;
+  }
+
+  function teleportActorToMirrorPoint(actor, target, now) {
+    const safe = findNearestSafePosition(target.x, target.y, actor.radius || 20);
+    actor.x = safe.x;
+    actor.y = safe.y;
+    actor.vx = 0;
+    actor.vy = 0;
+    actor.path = [];
+    actor.pathGoal = null;
+    actor.repathAt = 0;
+    actor.mirrorTeleportReadyAt = now + getMirrorTeleportCooldownForActor(actor);
+    if (actor === hunter) updateCarriedSurvivorPosition();
+    showAssistAlert(actor === hunter ? "镜鬼穿隙" : "空间裂缝", now, 760);
+    chasePulseUntil = now + 300;
+    return true;
+  }
+
+  function getMirrorRiftExitForActor(actor, source) {
+    if (actor && actor !== hunter) return getNearestMirrorRiftExitToHunter(source);
+    if (actor === hunter && isMirrorGhost()) return getNearestMirrorRiftExitToSurvivors(source) || getRandomMirrorRiftExit(source);
+    return getRandomMirrorRiftExit(source);
+  }
+
+  function getNearestMirrorRiftExitToHunter(source) {
+    const targets = mirrorRifts.filter((rift) => rift !== source);
+    if (targets.length === 0) return null;
+    const target = targets.reduce((best, rift) => distanceBetween(hunter, rift) < distanceBetween(hunter, best) ? rift : best, targets[0]);
+    const away = normalizeVector(target.x - hunter.x, target.y - hunter.y);
+    const fallbackAngle = Math.random() * Math.PI * 2;
+    const x = away.x || Math.cos(fallbackAngle);
+    const y = away.y || Math.sin(fallbackAngle);
+    return {
+      x: target.x + x * (MIRROR_RIFT_RADIUS + 32),
+      y: target.y + y * (MIRROR_RIFT_RADIUS + 32)
+    };
+  }
+
+  function getNearestMirrorRiftExitToSurvivors(source) {
+    const targets = mirrorRifts.filter((rift) => rift !== source);
+    const survivors = getSurvivors().filter((survivor) =>
+      !survivor.escaped &&
+      survivor.state !== "eliminated" &&
+      survivor.state !== "carried" &&
+      survivor.state !== "seated"
+    );
+    if (targets.length === 0 || survivors.length === 0) return null;
+    let bestTarget = null;
+    let bestSurvivor = null;
+    let bestDistance = Infinity;
+    targets.forEach((rift) => {
+      survivors.forEach((survivor) => {
+        const distance = distanceBetween(rift, survivor);
+        if (distance < bestDistance) {
+          bestTarget = rift;
+          bestSurvivor = survivor;
+          bestDistance = distance;
+        }
+      });
+    });
+    if (!bestTarget) return null;
+    const towardSurvivor = normalizeVector(bestSurvivor.x - bestTarget.x, bestSurvivor.y - bestTarget.y);
+    const fallbackAngle = Math.random() * Math.PI * 2;
+    const x = towardSurvivor.x || Math.cos(fallbackAngle);
+    const y = towardSurvivor.y || Math.sin(fallbackAngle);
+    return {
+      x: bestTarget.x + x * (MIRROR_RIFT_RADIUS + hunter.radius + 18),
+      y: bestTarget.y + y * (MIRROR_RIFT_RADIUS + hunter.radius + 18)
+    };
+  }
+
+  function getRandomMirrorRiftExit(source) {
+    const targets = mirrorRifts.filter((rift) => rift !== source);
+    if (targets.length === 0) return null;
+    const target = targets[Math.floor(Math.random() * targets.length)];
+    const angle = Math.random() * Math.PI * 2;
+    return {
+      x: target.x + Math.cos(angle) * (MIRROR_RIFT_RADIUS + 32),
+      y: target.y + Math.sin(angle) * (MIRROR_RIFT_RADIUS + 32)
+    };
+  }
+
+  function getRandomMirrorCurtainPoint() {
+    if (mirrorCurtains.length === 0) return null;
+    const curtain = mirrorCurtains[Math.floor(Math.random() * mirrorCurtains.length)];
+    const t = 0.2 + Math.random() * 0.6;
+    const x = curtain.x1 + (curtain.x2 - curtain.x1) * t;
+    const y = curtain.y1 + (curtain.y2 - curtain.y1) * t;
+    const normal = getSegmentNormal(curtain);
+    const side = Math.random() < 0.5 ? -1 : 1;
+    return {
+      x: x + normal.x * side * (MIRROR_CURTAIN_THICKNESS + hunter.radius + 14),
+      y: y + normal.y * side * (MIRROR_CURTAIN_THICKNESS + hunter.radius + 14)
+    };
+  }
+
+  function getMirrorCurtainCooldownLeft(now) {
+    return Math.max(0, (hunter.nextMirrorCurtainAt || 0) - now);
+  }
+
+  function canStartMirrorCurtainAim(now) {
+    return matchStarted &&
+      selectedRole === PLAYER_ROLE.hunter &&
+      isMirrorGhost() &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      getMirrorCurtainCooldownLeft(now) <= 0;
+  }
+
+  function startMirrorCurtainAim(now) {
+    if (mirrorCurtainAim) {
+      mirrorCurtainAim = null;
+      showAssistAlert("取消镜幕", now, 600);
+      return false;
+    }
+    if (!canStartMirrorCurtainAim(now)) {
+      showAssistAlert(getMirrorCurtainBlockedReason(now), now, 900);
+      return false;
+    }
+    mirrorCurtainAim = { start: null, current: null, startedAt: now, pointerId: null };
+    showAssistAlert("划线放置镜幕", now, 1000);
+    return true;
+  }
+
+  function getMirrorCurtainBlockedReason(now) {
+    if (!matchStarted || selectedRole !== PLAYER_ROLE.hunter || !isMirrorGhost()) return "镜幕不可用";
+    if (hunter.action || hunter.carrying || now < hunter.stunnedUntil || now < hunter.wipeUntil) return "正在行动";
+    const cooldown = getMirrorCurtainCooldownLeft(now);
+    return cooldown > 0 ? `镜幕冷却${formatCooldown(cooldown)}` : "镜幕不可用";
+  }
+
+  function beginMirrorCurtainLine(clientX, clientY, pointerId = null) {
+    if (!mirrorCurtainAim) return false;
+    const point = getAimTargetFromPointer(clientX, clientY, false);
+    if (!point) return false;
+    mirrorCurtainAim.start = point;
+    mirrorCurtainAim.current = point;
+    mirrorCurtainAim.pointerId = pointerId;
+    return true;
+  }
+
+  function updateMirrorCurtainAim(clientX, clientY, pointerId = null) {
+    if (!mirrorCurtainAim) return false;
+    if (mirrorCurtainAim.pointerId !== null && pointerId !== mirrorCurtainAim.pointerId) return false;
+    if (!mirrorCurtainAim.start) return false;
+    const point = getAimTargetFromPointer(clientX, clientY, false);
+    if (!point) return false;
+    mirrorCurtainAim.current = clampMirrorCurtainEnd(mirrorCurtainAim.start, point);
+    return true;
+  }
+
+  function finishMirrorCurtainAim(now, pointerId = null) {
+    if (!mirrorCurtainAim) return false;
+    if (mirrorCurtainAim.pointerId !== null && pointerId !== mirrorCurtainAim.pointerId) return false;
+    const aim = mirrorCurtainAim;
+    mirrorCurtainAim = null;
+    if (!aim.start || !aim.current || distanceBetween(aim.start, aim.current) < MIRROR_CURTAIN_MIN_LENGTH) {
+      showAssistAlert("镜幕太短", now, 700);
+      return false;
+    }
+    placeMirrorCurtain(aim.start, aim.current, now);
+    return true;
+  }
+
+  function clampMirrorCurtainEnd(start, point) {
+    const dx = point.x - start.x;
+    const dy = point.y - start.y;
+    const length = Math.hypot(dx, dy);
+    if (length < MIRROR_CURTAIN_MIN_LENGTH) return point;
+    const clamped = Math.min(MIRROR_CURTAIN_MAX_LENGTH, length);
+    return { x: start.x + (dx / length) * clamped, y: start.y + (dy / length) * clamped };
+  }
+
+  function placeMirrorCurtain(start, end, now) {
+    mirrorCurtains.push({ id: ++mirrorCurtainId, x1: start.x, y1: start.y, x2: end.x, y2: end.y, createdAt: now, until: now + MIRROR_CURTAIN_DURATION });
+    hunter.nextMirrorCurtainAt = now + MIRROR_CURTAIN_COOLDOWN;
+    showAssistAlert("镜幕展开", now, 900);
+  }
+
+  function updateMirrorCurtains(now) {
+    for (let index = mirrorCurtains.length - 1; index >= 0; index -= 1) {
+      if (now >= (mirrorCurtains[index].until || 0)) mirrorCurtains.splice(index, 1);
+    }
+  }
+
+  function getDanceStepCooldownLeft(now) {
+    return Math.max(0, (hunter.nextDanceStepAt || 0) - now);
+  }
+
+  function isInfiniteDanceActive(now = performance.now()) {
+    return isDancer() && hunter.presenceTier >= 2 && now < (hunter.infiniteDanceUntil || 0);
+  }
+
+  function getDanceStepCooldown(now = performance.now()) {
+    return isInfiniteDanceActive(now) ? INFINITE_DANCE_STEP_COOLDOWN : 7000;
+  }
+
+  function getDanceSpinCooldown(now = performance.now()) {
+    return isInfiniteDanceActive(now) ? INFINITE_DANCE_SPIN_COOLDOWN : DANCE_SPIN_COOLDOWN;
+  }
+
+  function canStartDanceStep(now) {
+    return matchStarted &&
+      isDancer() &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      getDanceStepCooldownLeft(now) <= 0;
+  }
+
+  function startDanceStep(targetX, targetY, now) {
+    if (!canStartDanceStep(now)) return false;
+    const dx = targetX - hunter.x;
+    const dy = targetY - hunter.y;
+    const distance = Math.hypot(dx, dy);
+    const facing = distance > 8 ? Math.atan2(dy, dx) : hunter.angle || 0;
+    hunter.action = {
+      kind: "danceStep",
+      start: now,
+      until: now + DANCE_STEP_WINDUP,
+      angle: facing,
+      fromX: hunter.x,
+      fromY: hunter.y,
+      pointX: hunter.x + Math.cos(facing) * Math.min(DANCE_POINT_CAST_RANGE, Math.max(80, distance || DANCE_POINT_CAST_RANGE)),
+      pointY: hunter.y + Math.sin(facing) * Math.min(DANCE_POINT_CAST_RANGE, Math.max(80, distance || DANCE_POINT_CAST_RANGE))
+    };
+    hunter.status = "dancing";
+    hunter.nextDanceStepAt = now + getDanceStepCooldown(now);
+    showAssistAlert("舞步起势", now, 650);
+    return true;
+  }
+
+  function startDancePointAim(now, clientX = null, clientY = null, pointerId = null, useLastPointer = true) {
+    if (dancePointAim) return true;
+    if (!canStartDanceStep(now)) return false;
+    const target = getAimTargetFromPointer(clientX, clientY, useLastPointer) || {
+      x: hunter.x + Math.cos(hunter.angle) * DANCE_POINT_CAST_RANGE,
+      y: hunter.y + Math.sin(hunter.angle) * DANCE_POINT_CAST_RANGE
+    };
+    dancePointAim = { targetX: target.x, targetY: target.y, pointerId };
+    showAssistAlert("拖拽放置舞点", now, 900);
+    return true;
+  }
+
+  function updateDancePointAim(clientX, clientY, pointerId = null) {
+    if (!dancePointAim) return;
+    if (dancePointAim.pointerId !== null && pointerId !== null && dancePointAim.pointerId !== pointerId) return;
+    const target = getAimTargetFromPointer(clientX, clientY);
+    if (!target) return;
+    dancePointAim.targetX = target.x;
+    dancePointAim.targetY = target.y;
+  }
+
+  function finishDancePointAim(now, pointerId = null) {
+    if (!dancePointAim) return false;
+    if (dancePointAim.pointerId !== null && pointerId !== null && dancePointAim.pointerId !== pointerId) return false;
+    const aim = dancePointAim;
+    dancePointAim = null;
+    return startDanceStep(aim.targetX, aim.targetY, now);
+  }
+
+  function getDancePointPlacement(action) {
+    return getDancePointPlacementFromTarget(action.pointX, action.pointY, action.fromX, action.fromY);
+  }
+
+  function getDancePointPlacementFromTarget(targetX, targetY, originX = hunter.x, originY = hunter.y) {
+    const dx = targetX - originX;
+    const dy = targetY - originY;
+    const distance = Math.hypot(dx, dy);
+    const angle = distance > 8 ? Math.atan2(dy, dx) : hunter.angle;
+    const reach = Math.min(DANCE_POINT_CAST_RANGE, Math.max(80, distance || DANCE_POINT_CAST_RANGE));
+    return findNearestSafePosition(originX + Math.cos(angle) * reach, originY + Math.sin(angle) * reach, 10);
+  }
+
+  function finishDanceStep(action, now) {
+    const beforeX = hunter.x;
+    const beforeY = hunter.y;
+    moveActorSmart(hunter, Math.cos(action.angle) * DANCE_STEP_DISTANCE, Math.sin(action.angle) * DANCE_STEP_DISTANCE);
+    hunter.angle = action.angle;
+    const pointPosition = getDancePointPlacement(action);
+    const point = { x: pointPosition.x, y: pointPosition.y, createdAt: now, until: now + DANCE_POINT_DURATION };
+    hunter.action = null;
+    hunter.vx = 0;
+    hunter.vy = 0;
+    if (!pendingDancePoint || now >= pendingDancePoint.until) {
+      pendingDancePoint = point;
+      hunter.status = "chasing";
+      showAssistAlert("舞点落下", now, 850);
+      if (beforeX === hunter.x && beforeY === hunter.y) hunter.path = [];
+      return;
+    }
+    pendingDanceLine = {
+      firstPoint: pendingDancePoint,
+      secondPoint: point,
+      connectAt: now + DANCE_LINE_CONNECT_DELAY
+    };
+    pendingDancePoint = null;
+    hunter.status = "chasing";
+    showAssistAlert("舞点共鸣", now, DANCE_LINE_CONNECT_DELAY);
+    if (beforeX === hunter.x && beforeY === hunter.y) hunter.path = [];
+  }
+
+  function createDanceLine(firstPoint, secondPoint, now) {
+    const line = {
+      id: ++danceLineId,
+      x1: firstPoint.x,
+      y1: firstPoint.y,
+      x2: secondPoint.x,
+      y2: secondPoint.y,
+      createdAt: now,
+      until: now + DANCE_LINE_DURATION,
+      marked: new Set()
+    };
+    danceLines.push(line);
+    let hitCount = 0;
+    getSurvivors().forEach((survivor) => {
+      if (survivor.escaped || survivor.state === "downed" || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return;
+      if (!circleHitsSegment(survivor.x, survivor.y, survivor.radius + DANCE_LINE_THICKNESS * 0.5, line)) return;
+      line.marked.add(survivor);
+      addHunterPresenceHit(now);
+      applyHunterHit(survivor, now, { damage: 1, allowTerrorShock: false, danceLine: true });
+      hitCount += 1;
+    });
+    if (hitCount === 0) {
+      hunter.lastAttackHit = false;
+      hunter.status = "chasing";
+      showAssistAlert("舞线展开", now, 850);
+    } else {
+      hunter.status = "chasing";
+      showAssistAlert(`舞线命中 ${hitCount}人`, now, 850);
+    }
+  }
+
+  function updateDanceStepAction(action, now) {
+    hunter.status = "dancing";
+    hunter.angle = action.angle;
+    hunter.vx = 0;
+    hunter.vy = 0;
+    if (now >= action.until) finishDanceStep(action, now);
+    return true;
+  }
+
+  function updateDanceLines(now) {
+    if (pendingDancePoint && now >= pendingDancePoint.until) pendingDancePoint = null;
+    if (pendingDanceLine && now >= pendingDanceLine.connectAt) {
+      const { firstPoint, secondPoint } = pendingDanceLine;
+      pendingDanceLine = null;
+      createDanceLine(firstPoint, secondPoint, now);
+    }
+    for (let index = danceLines.length - 1; index >= 0; index -= 1) {
+      const line = danceLines[index];
+      if (now >= line.until) {
+        danceLines.splice(index, 1);
+        continue;
+      }
+      getSurvivors().forEach((survivor) => {
+        if (line.marked.has(survivor) || survivor.escaped || survivor.state === "downed" || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return;
+        if (!circleHitsSegment(survivor.x, survivor.y, survivor.radius + DANCE_LINE_THICKNESS * 0.5, line)) return;
+        line.marked.add(survivor);
+        if (addDanceErosion(survivor, 1) > 0) showAssistAlert(`侵蚀 ${getDanceErosionStacks(survivor)}层`, now, 700);
+      });
+    }
+  }
+
+  function canUseDanceSpin(now) {
+    return matchStarted &&
+      isDancer() &&
+      hunter.presenceTier >= 1 &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      now >= (hunter.nextDanceSpinAt || 0) &&
+      danceLines.length > 0;
+  }
+
+  function useDanceSpin(now) {
+    if (!canUseDanceSpin(now)) return false;
+    const line = danceLines
+      .slice()
+      .sort((a, b) => distanceToSegment(hunter.x, hunter.y, a.x1, a.y1, a.x2, a.y2) - distanceToSegment(hunter.x, hunter.y, b.x1, b.y1, b.x2, b.y2))[0];
+    if (!line) return false;
+    const dx = line.x2 - line.x1;
+    const dy = line.y2 - line.y1;
+    const length = Math.hypot(dx, dy) || 1;
+    const direction = { x: dx / length, y: dy / length };
+    const forward = Math.cos(hunter.angle) * direction.x + Math.sin(hunter.angle) * direction.y >= 0 ? 1 : -1;
+    const safe = findNearestSafePosition(
+      hunter.x + direction.x * DANCE_SPIN_DISTANCE * forward,
+      hunter.y + direction.y * DANCE_SPIN_DISTANCE * forward,
+      hunter.radius
+    );
+    hunter.x = safe.x;
+    hunter.y = safe.y;
+    hunter.path = [];
+    hunter.pathGoal = null;
+    hunter.nextDanceSpinAt = now + getDanceSpinCooldown(now);
+    showAssistAlert("旋步", now, 700);
+    return true;
+  }
+
+  function canUseInfiniteDance(now) {
+    return matchStarted &&
+      isDancer() &&
+      hunter.presenceTier >= 2 &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      now >= (hunter.nextInfiniteDanceAt || 0);
+  }
+
+  function useInfiniteDance(now) {
+    if (!canUseInfiniteDance(now)) return false;
+    hunter.infiniteDanceUntil = now + INFINITE_DANCE_DURATION;
+    hunter.nextInfiniteDanceAt = now + INFINITE_DANCE_COOLDOWN;
+    showAssistAlert("无穷舞", now, 1000);
+    return true;
+  }
+
+  function canUseMirrorLight(now) {
+    return matchStarted &&
+      isMirrorGhost() &&
+      hunter.presenceTier >= 1 &&
+      mirrorRifts.length > 0 &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      now >= (hunter.nextMirrorLightAt || 0);
+  }
+
+  function useMirrorLight(now) {
+    if (!canUseMirrorLight(now)) {
+      showAssistAlert(getMirrorLightBlockedReason(now), now, 900);
+      return false;
+    }
+    let affected = 0;
+    getSurvivors().forEach((survivor) => {
+      if (survivor.escaped || survivor.state === "downed" || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return;
+      const source = mirrorRifts.find((rift) => distanceBetween(survivor, rift) <= MIRROR_LIGHT_RADIUS);
+      if (!source) return;
+      survivor.mirrorBlindUntil = Math.max(survivor.mirrorBlindUntil || 0, now + MIRROR_LIGHT_BLIND_DURATION);
+      cancelSurvivorAction(survivor);
+      survivor.mirrorTeleportReadyAt = 0;
+      maybeTeleportActorThroughMirrorRift(survivor, now, source, true);
+      teleportActorNearMirrorGhost(survivor, now);
+      affected += 1;
+    });
+    hunter.nextMirrorLightAt = now + MIRROR_LIGHT_COOLDOWN;
+    showAssistAlert(`镜光 ${affected}人`, now, 1000);
+    return true;
+  }
+
+  function getMirrorLightBlockedReason(now) {
+    if (!matchStarted || selectedRole !== PLAYER_ROLE.hunter || !isMirrorGhost()) return "镜光不可用";
+    if (hunter.presenceTier < 1) return "需要一阶";
+    if (mirrorRifts.length === 0) return "没有裂缝";
+    if (hunter.action || hunter.carrying || now < hunter.stunnedUntil || now < hunter.wipeUntil) return "正在行动";
+    const cooldown = Math.max(0, (hunter.nextMirrorLightAt || 0) - now);
+    return cooldown > 0 ? `镜光冷却${formatCooldown(cooldown)}` : "镜光不可用";
+  }
+
+  function maybeTriggerMirrorBloomOnCurtain(actor, x, y) {
+    if (!isMirrorGhost() || hunter.presenceTier < 2 || !actor || actor === hunter) return false;
+    if (actor.escaped || actor.state === "eliminated" || actor.state === "seated" || actor.state === "carried") return false;
+    const hit = mirrorCurtains.some((curtain) => circleHitsSegment(x, y, actor.radius + MIRROR_CURTAIN_THICKNESS * 0.5, curtain));
+    if (!hit || performance.now() < (actor.mirrorTeleportReadyAt || 0)) return false;
+    teleportActorNearMirrorGhost(actor, performance.now());
+    return true;
+  }
+
+  function teleportActorNearMirrorGhost(actor, now) {
+    const angle = Math.random() * Math.PI * 2;
+    const safe = findNearestSafePosition(
+      hunter.x + Math.cos(angle) * (hunter.radius + actor.radius + 42),
+      hunter.y + Math.sin(angle) * (hunter.radius + actor.radius + 42),
+      actor.radius
+    );
+    actor.x = safe.x;
+    actor.y = safe.y;
+    actor.vx = 0;
+    actor.vy = 0;
+    actor.path = [];
+    actor.pathGoal = null;
+    actor.repathAt = 0;
+    actor.mirrorTeleportReadyAt = now + getMirrorTeleportCooldownForActor(actor);
+    showAssistAlert("华镜牵引", now, 760);
+  }
+
+  function getMirrorTeleportCooldownForActor(actor) {
+    return actor === hunter ? MIRROR_RIFT_TELEPORT_COOLDOWN : MIRROR_RIFT_SURVIVOR_TELEPORT_COOLDOWN;
   }
 
   function getSoulLampLimit() {
@@ -1538,7 +2531,7 @@
       applyHunterCharacter(pickAIHunterCharacter());
       applySurvivorCharacter(player, selectedSurvivorCharacter);
       player.badges = ensureBorrowedTimeForRescueRole(player, selectedSurvivorBadges);
-      const remaining = shuffled(AI_SURVIVOR_CHARACTER_ORDER.filter((id) => id !== selectedSurvivorCharacter));
+      const remaining = pickAICharacters(teammates.length, [selectedSurvivorCharacter]);
       teammates.forEach((survivor, index) => {
         applySurvivorCharacter(survivor, remaining[index] || AI_SURVIVOR_CHARACTER_ORDER[index]);
         survivor.badges = getAISurvivorBadges(survivor);
@@ -1551,7 +2544,7 @@
     applyHunterCharacter(selectedHunterCharacter);
     const survivorCharacters = previewSurvivorCharacterOrder && previewSurvivorCharacterOrder.length
       ? previewSurvivorCharacterOrder.slice()
-      : shuffled(AI_SURVIVOR_CHARACTER_ORDER);
+      : pickAICharacters(getSurvivors().length);
     getSurvivors().forEach((survivor, index) => {
       applySurvivorCharacter(survivor, survivorCharacters[index] || CLOCKMAKER_ID);
       survivor.badges = getAISurvivorBadges(survivor);
@@ -1578,8 +2571,18 @@
   }
 
   function pickAIHunterCharacter() {
-    const options = shuffled(AI_HUNTER_CHARACTER_ORDER);
-    return options[0] || "standard";
+    return pickWeighted(AI_HUNTER_CHARACTER_ORDER, AI_HUNTER_CHARACTER_WEIGHTS, "standard");
+  }
+
+  function pickAICharacters(count, excluded = []) {
+    const pool = AI_SURVIVOR_CHARACTER_ORDER.filter((id) => !excluded.includes(id));
+    const picked = [];
+    while (pool.length > 0 && picked.length < count) {
+      const characterId = pickWeighted(pool, AI_SURVIVOR_CHARACTER_WEIGHTS, pool[0]);
+      picked.push(characterId);
+      pool.splice(pool.indexOf(characterId), 1);
+    }
+    return picked;
   }
 
   function getSurvivorVaultDuration(actor, baseDuration) {
@@ -1623,7 +2626,8 @@
     const twinTimeBoost = isTwinSword() && hunter.twinTimePower && hunter.twinTimePower.kind === "self" && performance.now() < hunter.twinTimePower.until
       ? hunter.twinTimePower.factor
       : 1;
-    return hunter.speed * (isInSoulLampRange(hunter) ? SOUL_LAMP_HUNTER_SPEED_BOOST : 1) * twinFormBoost * twinTimeBoost * getSoulSiphonMoveMultiplier() * getBorrowSoulMoveMultiplier() * getPerfumeHunterSpeedMultiplier();
+    const tunerSlow = performance.now() < (hunter.tunerEchoSlowUntil || 0) ? TUNER_ECHO_SLOW_MULTIPLIER : 1;
+    return hunter.speed * (isInSoulLampRange(hunter) ? SOUL_LAMP_HUNTER_SPEED_BOOST : 1) * twinFormBoost * twinTimeBoost * getSoulSiphonMoveMultiplier() * getBorrowSoulMoveMultiplier() * getPerfumeHunterSpeedMultiplier() * tunerSlow;
   }
 
   function getSurvivorMoveSpeedMultiplier(actor, now = performance.now()) {
@@ -1642,6 +2646,10 @@
     const generalRideBoost = isGeneralRiding(actor, now) ? GENERAL_RIDE_SPEED_BOOST + (actor.generalRideWhips || 0) * GENERAL_WHIP_SPEED_BOOST : 1;
     const kneeJerkBoost = now < (actor.kneeJerkBoostUntil || 0) ? KNEE_JERK_SPEED_BOOST : 1;
     return getBoneBleedSpeedMultiplier(actor, now) * getSoulMarkMoveMultiplier(actor) * actorBoost * twinSlow * shackled * patrollerHold * patrollerSlow * endgameBoost * perfumeSelfBoost * perfumeUltimateBoost * fencerStrideBoost * medicAdrenalineBoost * generalRideBoost * kneeJerkBoost;
+  }
+
+  function getDownedCrawlSpeed(actor) {
+    return DOWNED_CRAWL_SPEED * getSurvivorMultiplier(actor, "crawlSpeed");
   }
 
   function getFencerStrideMarkCount(actor, now = performance.now()) {
@@ -1732,6 +2740,9 @@
     if (!isSoulBinder()) return 1;
     if (now < (hunter.soulSiphonPenaltyUntil || 0)) return SOUL_SIPHON_FAIL_SLOW;
     if (!hunter.soulSiphonTarget || now >= (hunter.soulSiphonUntil || 0)) return 1;
+    if (selectedRole !== PLAYER_ROLE.hunter) {
+      return hunter.target === hunter.soulSiphonTarget ? SOUL_SIPHON_SPEED_BOOST : 1;
+    }
     const move = getMoveVector();
     if (move.length <= 0.1) return 1;
     const toTarget = normalizeVector(hunter.soulSiphonTarget.x - hunter.x, hunter.soulSiphonTarget.y - hunter.y);
@@ -1811,7 +2822,28 @@
   }
 
   function getSurvivorInteractionSpeedMultiplier(actor, now = performance.now()) {
-    return getTwinSurvivorActionSpeedMultiplier(actor, now) * getPeeperInteractionSpeedMultiplier(actor, now);
+    return getTwinSurvivorActionSpeedMultiplier(actor, now) *
+      getPeeperInteractionSpeedMultiplier(actor, now) *
+      getDanceErosionInteractionMultiplier(actor);
+  }
+
+  function getDanceErosionStacks(survivor) {
+    return Math.max(0, Number(survivor && survivor.danceErosion) || 0);
+  }
+
+  function getDanceErosionMax() {
+    return DANCE_EROSION_MAX;
+  }
+
+  function addDanceErosion(survivor, amount = 1) {
+    if (!survivor || survivor.escaped || survivor.state === "eliminated") return 0;
+    const before = getDanceErosionStacks(survivor);
+    survivor.danceErosion = Math.min(getDanceErosionMax(), before + amount);
+    return survivor.danceErosion - before;
+  }
+
+  function getDanceErosionInteractionMultiplier(actor) {
+    return Math.pow(DANCE_EROSION_INTERACTION_MULTIPLIER, getDanceErosionStacks(actor));
   }
 
   function getPeeperInteractionSpeedMultiplier(actor, now = performance.now()) {
@@ -1868,7 +2900,7 @@
   }
 
   function isGeneralRiding(actor, now = performance.now()) {
-    return Boolean(isGeneral(actor) && now < (actor.generalRideUntil || 0));
+    return Boolean(isGeneral(actor) && (actor.state === "healthy" || actor.state === "injured") && now < (actor.generalRideUntil || 0));
   }
 
   function getGeneralRideSecondsLeft(actor, now = performance.now()) {
@@ -1881,11 +2913,12 @@
       !actor.action &&
       !actor.escaped &&
       (actor.state === "healthy" || actor.state === "injured") &&
-      (isGeneralRiding(actor, now) ? getGeneralWhipCooldownLeft(actor, now) <= 0 : getGeneralRideCooldownLeft(actor, now) <= 0);
+      (isGeneralRiding(actor, now) ? isGeneralRamReady(actor) || getGeneralWhipCooldownLeft(actor, now) <= 0 : getGeneralRideCooldownLeft(actor, now) <= 0);
   }
 
   function useGeneralSkill(actor, now) {
     if (!canUseGeneralSkill(actor, now)) return false;
+    if (isGeneralRiding(actor, now) && isGeneralRamReady(actor)) return startGeneralRam(actor, now);
     if (isGeneralRiding(actor, now)) return whipGeneralHorse(actor, now);
     return startGeneralRide(actor, now);
   }
@@ -1893,6 +2926,7 @@
   function startGeneralRide(actor, now) {
     actor.generalRideUntil = now + GENERAL_RIDE_DURATION;
     actor.generalRideWhips = 0;
+    actor.generalRage = 0;
     actor.nextGeneralWhipAt = now;
     showAssistAlert("骑马", now, 900);
     return true;
@@ -1910,9 +2944,87 @@
     actor.generalRideUntil = 0;
     actor.generalRideWhips = 0;
     actor.nextGeneralWhipAt = 0;
+    actor.generalRage = 0;
     actor.nextGeneralRideAt = now + GENERAL_RIDE_COOLDOWN;
     if (reason === "hit") showAssistAlert("落马免伤", now, 900);
     return true;
+  }
+
+  function isGeneralRamReady(actor) {
+    return (actor && actor.generalRage || 0) >= GENERAL_RAGE_MAX;
+  }
+
+  function updateGeneralRage(actor, now, dt) {
+    if (!isGeneralRiding(actor, now) || actor.action && actor.action.kind === "generalRam") {
+      actor.generalRage = 0;
+      return;
+    }
+    if (actor.escaped || actor.state !== "healthy" && actor.state !== "injured") {
+      actor.generalRage = 0;
+      return;
+    }
+    const chased = hunter.target === actor && distanceBetween(actor, hunter) <= GENERAL_RAGE_CHASE_RANGE;
+    if (!chased) return;
+    actor.generalRage = Math.min(GENERAL_RAGE_MAX, (actor.generalRage || 0) + GENERAL_RAGE_GAIN_PER_SECOND * dt);
+  }
+
+  function startGeneralRam(actor, now) {
+    if (!isGeneralRamReady(actor) || !isGeneralRiding(actor, now)) return false;
+    const angle = Math.atan2(hunter.y - actor.y, hunter.x - actor.x);
+    actor.generalRage = 0;
+    actor.action = {
+      kind: "generalRam",
+      start: now,
+      lastUpdate: now,
+      until: now + GENERAL_RAM_WINDUP + GENERAL_RAM_DURATION,
+      phase: "backstep",
+      angle: Number.isFinite(angle) ? angle : actor.angle || 0,
+      backstepDistance: 0,
+      dashDistance: 0,
+      hitHunter: false
+    };
+    showAssistAlert("后撤助跑", now, 700);
+    return true;
+  }
+
+  function ramHunterFromGeneral(actor, now) {
+    let angle = Math.atan2(hunter.y - actor.y, hunter.x - actor.x);
+    if (!Number.isFinite(angle) || Math.hypot(hunter.x - actor.x, hunter.y - actor.y) < 1) {
+      angle = Number.isFinite(actor.angle) ? actor.angle : 0;
+    }
+
+    const dx = Math.cos(angle) * GENERAL_RAM_KNOCKBACK;
+    const dy = Math.sin(angle) * GENERAL_RAM_KNOCKBACK;
+    const targetX = hunter.x + dx;
+    const targetY = hunter.y + dy;
+    const targetBlocked = !isSafePosition(targetX, targetY, hunter.radius);
+    const beforeX = hunter.x;
+    const beforeY = hunter.y;
+    const moved = moveActorSmart(hunter, dx, dy, { forceCollision: true });
+    const blocked = targetBlocked || moved < GENERAL_RAM_KNOCKBACK * 0.72;
+
+    hunter.vx = (hunter.x - beforeX) / Math.max(GENERAL_RAM_DURATION / 1000, 0.001);
+    hunter.vy = (hunter.y - beforeY) / Math.max(GENERAL_RAM_DURATION / 1000, 0.001);
+    hunter.path = [];
+    hunter.pathGoal = null;
+    chasePulseUntil = now + 320;
+    cancelSawDashByControl(now);
+    cancelDanceStepByControl(now);
+
+    if (blocked) {
+      showAssistAlert("铁骑撞墙", now, 900);
+      interruptHunterByStun(now, GENERAL_RAM_WALL_STUN);
+      return;
+    }
+
+    showAssistAlert("铁骑击退", now, 700);
+  }
+
+  function finishGeneralRam(actor) {
+    if (!actor || !actor.action || actor.action.kind !== "generalRam") return;
+    actor.action = null;
+    actor.vx = 0;
+    actor.vy = 0;
   }
 
   function canUseMedicAdrenaline(actor, now) {
@@ -1935,8 +3047,6 @@
 
   function canStartFencerLunge(actor, now) {
     return matchStarted &&
-      selectedRole === PLAYER_ROLE.survivor &&
-      actor === player &&
       isFencer(actor) &&
       !actor.action &&
       !actor.escaped &&
@@ -2035,6 +3145,88 @@
     return Math.max(0, (actor.nextPerfumeMistAt || 0) - now);
   }
 
+  function getTunerEchoCooldownLeft(actor, now) {
+    return Math.max(0, (actor.nextTunerEchoAt || 0) - now);
+  }
+
+  function getTunerCipherTuneCooldownLeft(actor, now) {
+    return Math.max(0, (actor.nextTunerCipherTuneAt || 0) - now);
+  }
+
+  function getTunerResonance(actor) {
+    return Math.max(0, Math.min(TUNER_RESONANCE_MAX, Number(actor && actor.tunerResonance) || 0));
+  }
+
+  function addTunerResonance(actor, amount) {
+    if (!isTuner(actor) || !amount) return 0;
+    const before = getTunerResonance(actor);
+    actor.tunerResonance = Math.min(TUNER_RESONANCE_MAX, before + amount);
+    return actor.tunerResonance - before;
+  }
+
+  function canUseTunerCipherTune(actor, now = performance.now()) {
+    const action = actor && actor.action;
+    const point = action && action.point;
+    return Boolean(
+      matchStarted &&
+      isTuner(actor) &&
+      action &&
+      action.kind === "repairing" &&
+      !action.calibration &&
+      point &&
+      !point.completed &&
+      getTunerResonance(actor) >= 20 &&
+      now >= (actor.nextTunerCipherTuneAt || 0)
+    );
+  }
+
+  function useTunerCipherTune(actor, now) {
+    if (!canUseTunerCipherTune(actor, now)) return false;
+    const point = actor.action.point;
+    actor.tunerResonance = getTunerResonance(actor) - 20;
+    actor.nextTunerCipherTuneAt = now + TUNER_CIPHER_TUNE_COOLDOWN;
+    point.progress = Math.min(1, point.progress + 0.1);
+    actor.action.calibrationFeedback = { label: "谐振校正 +10%", color: "#bca4eb", until: now + 1200 };
+    showAssistAlert("谐振校正 +10%", now, 900);
+    if (point.progress >= 1) finishRepair(point);
+    return true;
+  }
+
+  function canUseTunerEcho(actor, now) {
+    return Boolean(
+      matchStarted &&
+      isTuner(actor) &&
+      (actor.state === "healthy" || actor.state === "injured") &&
+      !actor.action &&
+      !actor.escaped &&
+      getTunerResonance(actor) >= TUNER_ECHO_COST &&
+      now >= (actor.nextTunerEchoAt || 0)
+    );
+  }
+
+  function useTunerEcho(actor, now) {
+    if (!canUseTunerEcho(actor, now)) return false;
+    const angle = actor.angle || 0;
+    const direction = { x: Math.cos(angle), y: Math.sin(angle) };
+    const start = findNearestSafePosition(
+      actor.x - direction.x * 18,
+      actor.y - direction.y * 18,
+      actor.radius
+    );
+    tunerEchoLines.push({
+      owner: actor,
+      x1: start.x,
+      y1: start.y,
+      x2: start.x - direction.x * TUNER_ECHO_LENGTH,
+      y2: start.y - direction.y * TUNER_ECHO_LENGTH,
+      until: now + TUNER_ECHO_DURATION
+    });
+    actor.tunerResonance = getTunerResonance(actor) - TUNER_ECHO_COST;
+    actor.nextTunerEchoAt = now + TUNER_ECHO_COOLDOWN;
+    showAssistAlert("回声带", now, 800);
+    return true;
+  }
+
   function canUsePerfumeMist(actor, now) {
     return Boolean(
       isPerfumer(actor) &&
@@ -2117,6 +3309,41 @@
       now >= hunter.wipeUntil &&
       now >= nextSoulLampAt &&
       soulLamps.length < getSoulLampLimit();
+  }
+
+  function canUseGhostfire(now) {
+    return matchStarted &&
+      isLanternKeeper() &&
+      soulLamps.length > 0 &&
+      !hunter.action &&
+      !hunter.carrying &&
+      now >= hunter.stunnedUntil &&
+      now >= hunter.wipeUntil &&
+      now >= (hunter.nextGhostfireAt || 0);
+  }
+
+  function getGhostfireCooldownLeft(now = performance.now()) {
+    return Math.max(0, (hunter.nextGhostfireAt || 0) - now);
+  }
+
+  function useGhostfire(now) {
+    if (!canUseGhostfire(now)) return false;
+    hunter.nextGhostfireAt = now + GHOSTFIRE_COOLDOWN;
+    soulLamps.forEach((lamp) => {
+      [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([x, y]) => {
+        ghostfireProjectiles.push({
+          x: lamp.x + x * GHOSTFIRE_RADIUS,
+          y: lamp.y + y * GHOSTFIRE_RADIUS,
+          vx: x * GHOSTFIRE_SPEED,
+          vy: y * GHOSTFIRE_SPEED,
+          traveled: 0
+        });
+      });
+    });
+    trackHunterSkillUseUnlock(now);
+    lanternAlert = { text: "鬼火吞噬", until: now + 1000 };
+    chasePulseUntil = now + 360;
+    return true;
   }
 
   function canShadowTeleport(now) {
@@ -2238,6 +3465,9 @@
         if (value) handlePlayerSkill(performance.now());
       } else if (selectedRole === PLAYER_ROLE.hunter && isSawbone()) {
         if (value) handlePlayerSkill(performance.now());
+      } else if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+        if (value) startDancePointAim(performance.now());
+        else finishDancePointAim(performance.now());
       } else if (selectedRole === PLAYER_ROLE.hunter && isTwinSword()) {
         if (value) handlePlayerSkill(performance.now());
       } else if (value) {
@@ -2275,15 +3505,54 @@
     return Math.hypot(cx - closestX, cy - closestY) < radius;
   }
 
+  function distanceToSegment(px, py, x1, y1, x2, y2) {
+    const dx = x2 - x1;
+    const dy = y2 - y1;
+    const lengthSq = dx * dx + dy * dy;
+    if (lengthSq < 0.001) return Math.hypot(px - x1, py - y1);
+    const t = Math.max(0, Math.min(1, ((px - x1) * dx + (py - y1) * dy) / lengthSq));
+    return Math.hypot(px - (x1 + dx * t), py - (y1 + dy * t));
+  }
+
+  function circleHitsSegment(cx, cy, radius, segment) {
+    return distanceToSegment(cx, cy, segment.x1, segment.y1, segment.x2, segment.y2) < radius;
+  }
+
   function collides(x, y, radius = player.radius) {
     return getCollisionRects().some((wall) => circleHitsRect(x, y, radius, wall));
   }
 
+  function actorCollides(actor, x, y, radius = actor.radius) {
+    if (collides(x, y, radius)) return true;
+    return actorBlockedByMirrorCurtain(actor, x, y, radius);
+  }
+
+  function actorBlockedByMirrorCurtain(actor, x, y, radius = actor.radius) {
+    if (!actor || actor === hunter || actor.kind !== "ai" && actor !== player) return false;
+    return mirrorCurtains.some((curtain) => circleHitsSegment(x, y, radius + MIRROR_CURTAIN_THICKNESS * 0.5, curtain));
+  }
+
   function getCollisionRects() {
+    if (collisionRectsCache) return collisionRectsCache;
     const droppedPallets = pallets
       .filter((pallet) => pallet.label === "dropped")
       .map(getPalletCollisionRect);
-    return walls.concat(droppedPallets);
+    const windowFrames = windows.map(getWindowCollisionRect);
+    collisionRectsCache = walls.concat(droppedPallets, windowFrames);
+    return collisionRectsCache;
+  }
+
+  function invalidateCollisionRects() {
+    collisionRectsCache = null;
+  }
+
+  function getWindowCollisionRect(windowItem) {
+    return rect(
+      windowItem.x - windowItem.w / 2,
+      windowItem.y - windowItem.h / 2,
+      windowItem.w,
+      windowItem.h
+    );
   }
 
   function getPalletCollisionRect(pallet) {
@@ -2338,7 +3607,7 @@
         player.vy = 0;
         return;
       }
-      const crawlSpeed = DOWNED_CRAWL_SPEED * getSurvivorMultiplier(player, "crawlSpeed") * getSurvivorMoveSpeedMultiplier(player, now);
+      const crawlSpeed = getDownedCrawlSpeed(player);
       const dx = move.x * crawlSpeed * dt;
       const dy = move.y * crawlSpeed * dt;
       if (move.length > 0.1) player.angle = Math.atan2(move.y, move.x);
@@ -2414,15 +3683,105 @@
   }
 
   function updateTeammates(dt, now) {
+    if (now - lastAIUpdateAt < AI_UPDATE_INTERVAL) return;
+    const aiDt = Math.min(0.07, Math.max(0.001, (now - lastAIUpdateAt) / 1000));
+    lastAIUpdateAt = now;
     const aiSurvivors = selectedRole === PLAYER_ROLE.hunter ? getSurvivors() : teammates;
+    updateAITeamPlan(aiSurvivors, now);
     updateAIFinalCipherGuard(aiSurvivors, now);
-    aiSurvivors.forEach((survivor) => updateAISurvivor(survivor, dt, now));
+    aiSurvivors.forEach((survivor) => updateAISurvivor(survivor, aiDt, now));
+  }
+
+  function updateAITeamPlan(aiSurvivors, now) {
+    const seated = getSurvivors().filter((survivor) => survivor.state === "seated" && survivor.chair);
+    const rescuePlanValid = aiTeamPlan.rescuer === null || isValidAIRescuePlannerActor(aiTeamPlan.rescuer, seated);
+    const gatePlanValid = aiTeamPlan.gateOpener === null || isValidAITeamPlannerActor(aiTeamPlan.gateOpener);
+    if (now < aiTeamPlan.until && rescuePlanValid && gatePlanValid) return;
+    const available = aiSurvivors.filter(isValidAITeamPlannerActor);
+    let rescuer = seated.length && rescuePlanValid ? aiTeamPlan.rescuer : null;
+    if (seated.length && available.length) {
+      if (!rescuer) {
+        rescuer = available.slice().sort((a, b) => {
+          const aScore = getSurvivorRescuePriority(a) * 260 + distanceBetween(a, getAIChairRescueTarget(a)?.chair || seated[0].chair);
+          const bScore = getSurvivorRescuePriority(b) * 260 + distanceBetween(b, getAIChairRescueTarget(b)?.chair || seated[0].chair);
+          return aScore - bScore;
+        })[0] || null;
+      }
+    }
+
+    let gateOpener = null;
+    if (areExitsPowered() && !exitGates.some((gate) => gate.opened)) {
+      gateOpener = available
+        .filter((survivor) => survivor !== rescuer)
+        .sort((a, b) => getAIGateOpenerScore(a) - getAIGateOpenerScore(b))[0] || rescuer;
+    }
+
+    let repairLead = null;
+    if (!areExitsPowered() && seated.length === 0) {
+      repairLead = available.slice().sort((a, b) => getAIRepairLeadScore(a) - getAIRepairLeadScore(b))[0] || null;
+    }
+
+    aiTeamPlan = { until: now + AI_TEAM_PLAN_INTERVAL, rescuer, gateOpener, repairLead };
+  }
+
+  function isValidAITeamPlannerActor(survivor) {
+    return Boolean(survivor && !survivor.escaped && (survivor.state === "healthy" || survivor.state === "injured") && survivor !== hunter.target);
+  }
+
+  function isValidAIRescuePlannerActor(survivor, seated) {
+    if (!survivor || survivor.escaped || survivor.state !== "healthy" && survivor.state !== "injured") return false;
+    return seated.some((target) => target.chair && distanceBetween(survivor, target.chair) <= AI_RESCUE_ASSIGNMENT_MAX_DISTANCE);
+  }
+
+  function getAIRepairLeadScore(survivor) {
+    const character = getSurvivorCharacter(survivor);
+    const repairRoleBonus = getSurvivorRoleLabel(survivor) === "修机位" ? 700 : 0;
+    return (character.repairDuration || 1) * 520 - repairRoleBonus;
+  }
+
+  function getAIGateOpenerScore(survivor) {
+    const roleBonus = getSurvivorRoleLabel(survivor) === "修机位" ? 130 : 0;
+    return distanceToNearestGate(survivor) - roleBonus;
   }
 
   function updateAISurvivor(survivor, dt, now) {
     if (survivor.escaped) return;
     if (survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return;
     const hunterDistance = distanceBetween(survivor, hunter);
+    if (survivor.state === "downed") {
+      if (isBeingPickedUp(survivor)) {
+        survivor.vx = 0;
+        survivor.vy = 0;
+        return;
+      }
+      if (survivor.action && updateActorAction(survivor, now)) return;
+      if (maybeUseAIClockmakerSkill(survivor, hunterDistance, now)) return;
+      if (updateAIDownedHatchCrawl(survivor, dt, now)) return;
+      startSelfHealing(survivor, now);
+      survivor.vx = 0;
+      survivor.vy = 0;
+      return;
+    }
+    if (isHatchOpen() && (survivor.state === "healthy" || survivor.state === "injured")) {
+      if (survivor.action && survivor.action.kind === "escaping" && survivor.action.hatch) {
+        updateActorAction(survivor, now);
+        return;
+      }
+      cancelSurvivorAction(survivor);
+      updateAIHatchObjective(survivor, dt, now);
+      return;
+    }
+    if (survivor.action && survivor.action.kind === "beingHealed") {
+      updateActorAction(survivor, now);
+      return;
+    }
+    if (survivor.action && survivor.action.kind === "vaulting") {
+      updateActorAction(survivor, now);
+      return;
+    }
+    if (updateAIChairRescueAction(survivor, dt, now, hunterDistance)) return;
+    if (updateAIHitRecoveryRescue(survivor, dt, now)) return;
+    if (updateAIPalletMindgame(survivor, dt, now, hunterDistance)) return;
     if (maybeInterruptAIObjectiveForHunterThreat(survivor, hunterDistance, now)) {
       handleAIInteraction(survivor, now, hunterDistance);
       moveAISurvivorAway(survivor, dt, now, hunterDistance);
@@ -2434,28 +3793,27 @@
       return;
     }
     maybeInterruptAIObjectiveForRescue(survivor, now);
-    if (isHatchOpen() && (survivor.state === "healthy" || survivor.state === "injured")) {
-      if (survivor.action && survivor.action.kind === "escaping" && survivor.action.hatch) {
-        if (updateActorAction(survivor, now)) return;
-      }
-      cancelSurvivorAction(survivor);
-      if (updateAIHatchObjective(survivor, dt, now)) return;
+    if (survivor.action && survivor.action.kind === "escaping") {
+      if (updateActorAction(survivor, now)) return;
     }
-    if (updateActorAction(survivor, now)) return;
-
-    if (survivor.state === "downed") {
-      if (isBeingPickedUp(survivor)) {
-        survivor.vx = 0;
-        survivor.vy = 0;
-        return;
-      }
-      if (maybeUseAIClockmakerSkill(survivor, hunterDistance, now)) return;
-      if (updateAIDownedHatchCrawl(survivor, dt, now)) return;
-      startSelfHealing(survivor, now);
-      survivor.vx = 0;
-      survivor.vy = 0;
+    if (shouldAIForcePopFinalCipher(survivor, hunterDistance) && updateAIRepair(survivor, dt, now)) return;
+    if (exitGates.some((gate) => gate.opened) && isAISafeForEscapeObjective(survivor, hunterDistance)) {
+      if (updateAIEscape(survivor, dt, now)) return;
+    }
+    if (hunterDistance < 580 && !shouldAIHoldFinalCipherAgainstHunter(survivor, now)) {
+      if (updateAIChairRescue(survivor, dt, now, hunterDistance)) return;
+      if (shouldAIRepairDuringDistantChase(survivor, hunterDistance) && updateAIRepair(survivor, dt, now)) return;
+      if (maybeUseAITunerEcho(survivor, hunterDistance, now)) return;
+      if (maybeUseAIGeneralSkill(survivor, hunterDistance, now)) return;
+      if (maybeUseAIFencerSkill(survivor, hunterDistance, now)) return;
+      if (tryStartAIPalletMindgame(survivor, now, hunterDistance)) return;
+      cancelSurvivorAction(survivor);
+      handleAIInteraction(survivor, now, hunterDistance);
+      moveAISurvivorAway(survivor, dt, now, hunterDistance);
       return;
     }
+    if (maybeAvoidAIDancePoint(survivor, dt, now)) return;
+    if (updateActorAction(survivor, now)) return;
 
     if (isKiteSimulatorMode() && survivor !== player) {
       if (updateAIObjective(survivor, dt, now, hunterDistance)) return;
@@ -2467,9 +3825,8 @@
     maybeThrowAIPackage(survivor, hunterDistance, now);
     if (maybeUseAIStitchPack(survivor, hunterDistance, now)) return;
 
-    if (updateAIFinalCipherGuardObjective(survivor, dt, now)) return;
-
     if (updateAIChairRescue(survivor, dt, now, hunterDistance)) return;
+    if (updateAIFinalCipherGuardObjective(survivor, dt, now)) return;
     if (updateAISoulLampDismantle(survivor, dt, now, hunterDistance)) return;
     if (survivor.healDecision && updateAIHealing(survivor, dt, now, hunterDistance)) return;
 
@@ -2494,7 +3851,16 @@
 
   function maybeInterruptAIObjectiveForHunterThreat(survivor, hunterDistance, now) {
     if (!survivor.action || !["repairing", "openingGate"].includes(survivor.action.kind)) return false;
-    if (hunterDistance > AI_OBJECTIVE_ABORT_RANGE) return false;
+    if (survivor.action.kind === "openingGate" && exitGates.some((gate) => gate.opened)) {
+      cancelGateOpen(survivor.action);
+      survivor.action = null;
+      survivor.objectiveDecision = null;
+      survivor.path = [];
+      survivor.pathGoal = null;
+      return false;
+    }
+    const abortRange = survivor.action.kind === "openingGate" ? AI_GATE_OPEN_ABORT_RANGE : AI_OBJECTIVE_ABORT_RANGE;
+    if (hunterDistance > abortRange) return false;
 
     if (survivor.action.kind === "repairing") cancelRepair(survivor.action);
     if (survivor.action.kind === "openingGate") cancelGateOpen(survivor.action);
@@ -2506,6 +3872,57 @@
     survivor.pathGoal = null;
     survivor.nextInteractAt = now + 450;
     return true;
+  }
+
+  function shouldAIHoldFinalCipherAgainstHunter(survivor, now) {
+    const point = finalCipherGuard && finalCipherGuard.point;
+    return Boolean(
+      finalCipherGuard &&
+      finalCipherGuard.survivor === survivor &&
+      point &&
+      shouldHoldFinalCipherPoint(point, now)
+    );
+  }
+
+  function maybeAvoidAIDancePoint(survivor, dt, now) {
+    if (!isDancer() || !pendingDancePoint || now >= pendingDancePoint.until) return false;
+    if (survivor.state !== "healthy" && survivor.state !== "injured") return false;
+    if (isAIDancePointRescueExempt(survivor)) return false;
+    const distance = distanceBetween(survivor, pendingDancePoint);
+    if (distance > AI_DANCE_POINT_AVOID_RANGE) return false;
+    const away = normalizeVector(survivor.x - pendingDancePoint.x, survivor.y - pendingDancePoint.y);
+    const direction = away.x || away.y ? away : normalizeVector(survivor.x - hunter.x, survivor.y - hunter.y);
+    const tangent = { x: -direction.y, y: direction.x };
+    const candidates = [
+      { x: survivor.x + direction.x * 300, y: survivor.y + direction.y * 300 },
+      { x: survivor.x + direction.x * 230 + tangent.x * 150, y: survivor.y + direction.y * 230 + tangent.y * 150 },
+      { x: survivor.x + direction.x * 230 - tangent.x * 150, y: survivor.y + direction.y * 230 - tangent.y * 150 }
+    ];
+    const destination = candidates.find((point) => isSafePosition(point.x, point.y, survivor.radius)) ||
+      findNearestSafePosition(survivor.x + direction.x * 180, survivor.y + direction.y * 180, survivor.radius);
+    cancelSurvivorAction(survivor);
+    survivor.kiteDecision = null;
+    survivor.healDecision = null;
+    survivor.objectiveDecision = null;
+    survivor.wanderTarget = null;
+    survivor.path = [];
+    survivor.pathGoal = null;
+    const moved = moveActorToPoint(survivor, destination.x, destination.y, survivor.speed * 0.94, dt, now);
+    if (moved < 0.5 && now > survivor.repathAt - 120) {
+      survivor.path = [];
+      survivor.pathGoal = null;
+      survivor.repathAt = 0;
+      const fallback = getAIReachableUnstuckPoint(survivor, pendingDancePoint);
+      if (fallback) moveActorToPoint(survivor, fallback.x, fallback.y, survivor.speed * 0.94, dt, now);
+    }
+    return true;
+  }
+
+  function isAIDancePointRescueExempt(survivor) {
+    if (survivor.action && survivor.action.kind === "rescuing") return true;
+    if (!isPreferredAIChairRescuer(survivor)) return false;
+    const target = getAIChairRescueTarget(survivor);
+    return Boolean(target && isAISafeToRescueChair(survivor, distanceBetween(survivor, hunter), target));
   }
 
   function maybeThrowAIPackage(survivor, hunterDistance, now) {
@@ -2520,6 +3937,7 @@
 
   function maybeUseAISurvivorSkill(survivor, hunterDistance, now) {
     if (maybeUseAIFlywheel(survivor, hunterDistance, now)) return true;
+    if (maybeUseAIFencerSkill(survivor, hunterDistance, now)) return true;
     if (maybeUseAIGeneralSkill(survivor, hunterDistance, now)) return true;
     if (maybeUseAIMedicSkill(survivor, hunterDistance, now)) return true;
     if (maybeUseAIClockmakerSkill(survivor, hunterDistance, now)) return true;
@@ -2544,9 +3962,19 @@
     return useMedicAdrenaline(survivor, now);
   }
 
+  function maybeUseAIFencerSkill(survivor, hunterDistance, now) {
+    if (!isFencer(survivor) || !canStartFencerLunge(survivor, now)) return false;
+    const pressured = hunter.target === survivor || hunterDistance < 190;
+    if (!pressured || hunterDistance < 74 || hunterDistance > 250) return false;
+    if (!hasWalkableLine(survivor.x, survivor.y, hunter.x, hunter.y, survivor.radius)) return false;
+    survivor.angle = Math.atan2(hunter.y - survivor.y, hunter.x - survivor.x);
+    return startFencerLunge(survivor, now);
+  }
+
   function maybeUseAIGeneralSkill(survivor, hunterDistance, now) {
     if (!isGeneral(survivor) || !canUseGeneralSkill(survivor, now)) return false;
     if (isGeneralRiding(survivor, now)) {
+      if (isGeneralRamReady(survivor)) return startGeneralRam(survivor, now);
       return whipGeneralHorse(survivor, now);
     }
     const pressured = hunter.target === survivor || hunterDistance <= hunter.attackRange + survivor.radius + 140;
@@ -2583,6 +4011,14 @@
     if (hunter.target !== survivor && hunterDistance >= PERFUMER_SENSE_NEAR_RANGE) return false;
     usePerfumeSkill(survivor, now);
     return true;
+  }
+
+  function maybeUseAITunerEcho(survivor, hunterDistance, now) {
+    if (!canUseTunerEcho(survivor, now)) return false;
+    if (hunter.target !== survivor || hunterDistance > 250) return false;
+    const toHunter = normalizeVector(hunter.x - survivor.x, hunter.y - survivor.y);
+    survivor.angle = Math.atan2(-toHunter.y, -toHunter.x);
+    return useTunerEcho(survivor, now);
   }
 
   function maybeUseAIStitchPack(survivor, hunterDistance, now) {
@@ -2636,7 +4072,7 @@
 
   function updateAIFinalCipherGuard(aiSurvivors, now) {
     const point = getPrimedFinalCipherPoint();
-    if (!point) {
+    if (!point || !shouldHoldFinalCipherPoint(point, now)) {
       finalCipherGuard = null;
       return;
     }
@@ -2673,7 +4109,8 @@
     const distance = distanceBetween(survivor, point);
     const hunterPressure = Math.max(0, 440 - distanceBetween(hunter, survivor));
     const injuredPenalty = survivor.state === "injured" ? 80 : 0;
-    return distance + hunterPressure * 0.55 + injuredPenalty;
+    const adrenalinePenalty = hasSurvivorBadge(survivor, "adrenaline") ? 900 : 0;
+    return distance + hunterPressure * 0.55 + injuredPenalty + adrenalinePenalty;
   }
 
   function maybeInterruptAIObjectiveForRescue(survivor, now) {
@@ -2682,7 +4119,7 @@
     if (distanceBetween(survivor, hunter) < 180) return;
 
     const chairTarget = getAIChairRescueTarget(survivor);
-    if (chairTarget && isAISafeToRescueChair(survivor, distanceBetween(survivor, hunter), chairTarget)) {
+    if (chairTarget && (isAISafeToRescueChair(survivor, distanceBetween(survivor, hunter), chairTarget) || isAIChairRescueEmergency(survivor, chairTarget))) {
       cancelAIObjectiveAction(survivor);
       return;
     }
@@ -2768,27 +4205,35 @@
       return updateAIHatchObjective(survivor, dt, now);
     }
 
+    if (areExitsPowered()) {
+      if (!exitGates.some((gate) => gate.opened) && aiTeamPlan.gateOpener && aiTeamPlan.gateOpener !== survivor) return false;
+      if (!isAISafeForEscapeObjective(survivor, hunterDistance)) {
+        survivor.objectiveDecision = null;
+        return false;
+      }
+      return updateAIEscape(survivor, dt, now);
+    }
+
     if (!isAISafeForObjective(survivor, hunterDistance)) {
       survivor.objectiveDecision = null;
       return false;
-    }
-
-    if (areExitsPowered()) {
-      return updateAIEscape(survivor, dt, now);
     }
 
     return updateAIRepair(survivor, dt, now);
   }
 
   function updateAIChairRescue(survivor, dt, now, hunterDistance) {
-    if (!isPreferredAIChairRescuer(survivor)) return false;
     const target = getAIChairRescueTarget(survivor);
-    if (!target || !isAISafeToRescueChair(survivor, hunterDistance, target)) return false;
+    if (!target) return false;
+    const emergency = isAIChairRescueEmergency(survivor, target);
+    if (!isEmergencyAIChairRescuer(survivor) || !emergency && !isPreferredAIChairRescuer(survivor)) return false;
+    if (!isAISafeToRescueChair(survivor, hunterDistance, target)) return false;
 
     survivor.healDecision = null;
     survivor.objectiveDecision = null;
     survivor.kiteDecision = null;
     survivor.wanderTarget = null;
+    setAISurvivorTask(survivor, "rescue", now, 900);
 
     if (maybeUseAIChairRescueSkill(survivor, target, now, dt)) return true;
 
@@ -2801,6 +4246,78 @@
     const moved = moveActorToPoint(survivor, standPoint.x, standPoint.y, survivor.speed * 0.95, dt, now);
     if (moved < 0.5 && now > survivor.repathAt - 120) survivor.path = [];
     return true;
+  }
+
+  function updateAIChairRescueAction(survivor, dt, now, hunterDistance) {
+    const action = survivor.action;
+    if (!action || action.kind !== "rescuing") return false;
+    const target = action.target;
+    if (!target || target.state !== "seated" || !target.chair) return updateActorAction(survivor, now);
+
+    if (shouldAIReleaseChairRescueForAttack(survivor, target, hunterDistance)) {
+      survivor.action = null;
+      survivor.nextInteractAt = now + AI_RESCUE_ATTACK_DODGE_DELAY;
+      survivor.path = [];
+      survivor.pathGoal = null;
+      const dodgePoint = getAIChairRescueDodgePoint(survivor, target);
+      moveActorToPoint(survivor, dodgePoint.x, dodgePoint.y, survivor.speed, dt, now);
+      return true;
+    }
+
+    return updateActorAction(survivor, now);
+  }
+
+  function updateAIHitRecoveryRescue(survivor, dt, now) {
+    const recovery = survivor.aiHitRecoveryRescue;
+    if (!recovery) return false;
+    const target = recovery.target;
+    if (
+      now >= recovery.until ||
+      survivor.state !== "healthy" && survivor.state !== "injured" ||
+      !target || target.state !== "seated" || !target.chair
+    ) {
+      survivor.aiHitRecoveryRescue = null;
+      return false;
+    }
+    if (now >= (hunter.wipeUntil || 0) && now >= (hunter.stunnedUntil || 0)) {
+      survivor.aiHitRecoveryRescue = null;
+      return false;
+    }
+
+    setAISurvivorTask(survivor, "hitRecoveryRescue", now, 700);
+    if (distanceBetween(survivor, target.chair) < 92) {
+      startRescue(survivor, target, now);
+      return true;
+    }
+
+    const standPoint = findNearestSafePosition(target.chair.x + 52, target.chair.y + 38, survivor.radius);
+    const injuredPenalty = survivor.state === "injured" ? 0.88 : 1;
+    const hitBoost = now < survivor.boostUntil ? 1.45 : 1;
+    const speed = survivor.speed * injuredPenalty * hitBoost * getSurvivorMoveSpeedMultiplier(survivor, now);
+    moveActorToPoint(survivor, standPoint.x, standPoint.y, speed * 1.08, dt, now);
+    return true;
+  }
+
+  function shouldAIReleaseChairRescueForAttack(rescuer, target, hunterDistance) {
+    const action = hunter.action;
+    if (!action || action.kind !== "attackWindup" || !target || !target.chair) return false;
+    const strikeReach = hunter.attackRange + getHunterAttackLungeDistance() + rescuer.radius + 28;
+    if (hunterDistance > strikeReach) return false;
+    const targetAngle = Math.atan2(rescuer.y - hunter.y, rescuer.x - hunter.x);
+    return Math.abs(angleDifference(hunter.angle, targetAngle)) <= hunter.attackArc / 2 + 0.18;
+  }
+
+  function getAIChairRescueDodgePoint(rescuer, target) {
+    const away = normalizeVector(rescuer.x - hunter.x, rescuer.y - hunter.y);
+    const direction = away.x || away.y ? away : normalizeVector(rescuer.x - target.chair.x, rescuer.y - target.chair.y);
+    const tangent = { x: -direction.y, y: direction.x };
+    const candidates = [
+      { x: rescuer.x + tangent.x * 104 + direction.x * 46, y: rescuer.y + tangent.y * 104 + direction.y * 46 },
+      { x: rescuer.x - tangent.x * 104 + direction.x * 46, y: rescuer.y - tangent.y * 104 + direction.y * 46 },
+      { x: rescuer.x + direction.x * 126, y: rescuer.y + direction.y * 126 }
+    ];
+    return candidates.find((point) => isSafePosition(point.x, point.y, rescuer.radius)) ||
+      findNearestSafePosition(candidates[0].x, candidates[0].y, rescuer.radius);
   }
 
   function maybeUseAIChairRescueSkill(survivor, target, now, dt = 0) {
@@ -2860,6 +4377,9 @@
   }
 
   function isPreferredAIChairRescuer(survivor) {
+    if (aiTeamPlan.rescuer && isValidAIRescuePlannerActor(aiTeamPlan.rescuer, getSurvivors().filter((target) => target.state === "seated" && target.chair))) {
+      return aiTeamPlan.rescuer === survivor;
+    }
     if (!isAvailableAIChairRescuer(survivor)) return false;
     const ownPriority = getSurvivorRescuePriority(survivor);
     return !teammates.some((other) => {
@@ -2875,17 +4395,29 @@
     return true;
   }
 
+  function isEmergencyAIChairRescuer(survivor) {
+    if (!survivor || survivor.escaped || survivor.action) return false;
+    return survivor.state === "healthy" || survivor.state === "injured";
+  }
+
   function isAISafeToRescueChair(survivor, hunterDistance, target) {
     if (survivor.action || survivor.state !== "healthy" && survivor.state !== "injured") return false;
-    if (hunter.target === survivor) return false;
     const chairHunterDistance = target && target.chair ? distanceBetween(hunter, target.chair) : Infinity;
     const rescuerChairDistance = target && target.chair ? distanceBetween(survivor, target.chair) : Infinity;
     const urgent = target && target.chairProgress >= getAIRescueDangerProgress(target);
+    const emergency = isAIChairRescueEmergency(survivor, target);
     const committedToRescue = rescuerChairDistance < 150;
     const hasRescueTool = hasReadyAIChairRescueTool(survivor, target);
+    if (hunter.target === survivor && !emergency) return false;
+    if (hunter.target === survivor && rescuerChairDistance > 440 && !hasRescueTool) return false;
     if (hunterDistance < 220 && !urgent && !committedToRescue && !hasRescueTool) return false;
     if (chairHunterDistance < 235 && !urgent && !committedToRescue && !hasRescueTool) return false;
     return true;
+  }
+
+  function isAIChairRescueEmergency(survivor, target) {
+    if (!survivor || !target || target.state !== "seated" || !target.chair) return false;
+    return target.chairProgress >= getAIRescueTargetProgress(target) - AI_RESCUE_EMERGENCY_WINDOW;
   }
 
   function hasReadyAIChairRescueTool(survivor, target, now = performance.now()) {
@@ -2958,6 +4490,19 @@
     return hunterDistance >= AI_OBJECTIVE_ABORT_RANGE + 35;
   }
 
+  function isAISafeForEscapeObjective(survivor, hunterDistance) {
+    if (survivor.action || survivor.state !== "healthy" && survivor.state !== "injured" || survivor.escaped) return false;
+    const hasOpenedGate = exitGates.some((gate) => gate.opened);
+    const nearGate = distanceToNearestGate(survivor) <= AI_OPEN_GATE_PRIORITY_RANGE;
+    if (hasOpenedGate) return hunter.target !== survivor || hunterDistance >= AI_GATE_OPEN_ABORT_RANGE || nearGate;
+    if (hunter.target === survivor) return nearGate && hunterDistance >= AI_GATE_ACTION_RANGE;
+    return hunterDistance >= AI_GATE_OPEN_ABORT_RANGE || distanceToNearestGate(survivor) <= AI_OPEN_GATE_PRIORITY_RANGE;
+  }
+
+  function distanceToNearestGate(actor) {
+    return exitGates.reduce((nearest, gate) => Math.min(nearest, distanceBetween(actor, gate)), Infinity);
+  }
+
   function updateAISoulLampDismantle(survivor, dt, now, hunterDistance) {
     if (!isLanternKeeper() || soulLamps.length === 0) return false;
     if (!isAISafeForObjective(survivor, hunterDistance)) return false;
@@ -2985,6 +4530,7 @@
 
     survivor.kiteDecision = null;
     survivor.wanderTarget = null;
+    setAISurvivorTask(survivor, "repair", now, 1800);
 
     if (shouldHoldFinalCipherPoint(point, now)) {
       if (!finalCipherGuard || finalCipherGuard.survivor !== survivor) return false;
@@ -3004,7 +4550,7 @@
       return true;
     }
 
-    const moved = moveActorToPoint(survivor, point.x, point.y, survivor.speed * 0.62, dt, now);
+    const moved = moveActorToPoint(survivor, point.x, point.y, survivor.speed * 0.74, dt, now);
     if (moved < 0.5 && now > survivor.repathAt - 120) {
       survivor.path = [];
       survivor.objectiveDecision = null;
@@ -3012,26 +4558,93 @@
     return true;
   }
 
+  function shouldAIRepairDuringDistantChase(survivor, hunterDistance) {
+    if (areExitsPowered() || isHatchOpen() || hunterDistance < 440) return false;
+    const chaseTarget = hunter.target;
+    if (!chaseTarget || chaseTarget === survivor) return false;
+    return chaseTarget.state === "healthy" || chaseTarget.state === "injured";
+  }
+
+  function shouldAIForcePopFinalCipher(survivor, hunterDistance) {
+    if (!getPrimedFinalCipherPoint() || !shouldPopPrimedFinalCipher()) return false;
+    return hunter.target !== survivor || hunterDistance >= 240;
+  }
+
   function updateAIEscape(survivor, dt, now) {
     const gate = getAIEscapeTarget(survivor, now);
     if (!gate) return false;
+    const gatePoint = gate.opened ? getAIGateEscapePoint(survivor, gate) : getAIGateInteractionPoint(survivor, gate);
 
     survivor.kiteDecision = null;
     survivor.wanderTarget = null;
+    setAISurvivorTask(survivor, gate.opened ? "escape" : "openGate", now, 1200);
 
-    if (distanceBetween(survivor, gate) < 88) {
+    if (isActorInGateUseRange(survivor, gate, gatePoint)) {
       if (gate.opened) startEscape(survivor, gate, now);
       else startOpenGate(survivor, gate, now);
       survivor.objectiveDecision = null;
       return true;
     }
 
-    const moved = moveActorToPoint(survivor, gate.x, gate.y, survivor.speed * 0.72, dt, now);
+    const moved = moveActorToPoint(survivor, gatePoint.x, gatePoint.y, survivor.speed * 0.72, dt, now);
     if (moved < 0.5 && now > survivor.repathAt - 120) {
+      if (isActorInGateUseRange(survivor, gate, gatePoint)) {
+        if (gate.opened) startEscape(survivor, gate, now);
+        else startOpenGate(survivor, gate, now);
+        survivor.objectiveDecision = null;
+        return true;
+      }
       survivor.path = [];
       survivor.objectiveDecision = null;
     }
     return true;
+  }
+
+  function getAIGateEscapePoint(survivor, gate) {
+    const inwardX = gate.x < world.width / 2 ? 1 : -1;
+    const inwardY = gate.y < world.height / 2 ? 1 : -1;
+    const primaryHorizontal = Math.min(gate.x, world.width - gate.x) <= Math.min(gate.y, world.height - gate.y);
+    const primary = primaryHorizontal ? { x: inwardX, y: 0 } : { x: 0, y: inwardY };
+    const candidate = {
+      x: gate.x + primary.x * 54,
+      y: gate.y + primary.y * 54
+    };
+    if (isSafePosition(candidate.x, candidate.y, survivor.radius)) return candidate;
+    return findNearestSafePosition(gate.x, gate.y, survivor.radius);
+  }
+
+  function getAIGateInteractionPoint(survivor, gate) {
+    const inwardX = gate.x < world.width / 2 ? 1 : -1;
+    const inwardY = gate.y < world.height / 2 ? 1 : -1;
+    const primaryHorizontal = Math.min(gate.x, world.width - gate.x) <= Math.min(gate.y, world.height - gate.y);
+    const primary = primaryHorizontal ? { x: inwardX, y: 0 } : { x: 0, y: inwardY };
+    const tangent = primaryHorizontal ? { x: 0, y: 1 } : { x: 1, y: 0 };
+    const distances = [72, 88, 104];
+    const offsets = [0, 24, -24, 48, -48];
+    let best = null;
+    let bestScore = Infinity;
+
+    distances.forEach((distance) => {
+      offsets.forEach((offset) => {
+        const candidate = {
+          x: gate.x + primary.x * distance + tangent.x * offset,
+          y: gate.y + primary.y * distance + tangent.y * offset
+        };
+        if (!isSafePosition(candidate.x, candidate.y, survivor.radius)) return;
+        if (distanceBetween(candidate, gate) > 112) return;
+        const routePenalty = hasWalkableLine(survivor.x, survivor.y, candidate.x, candidate.y, survivor.radius) ? 0 : 70;
+        const score = distanceBetween(survivor, candidate) + routePenalty + Math.max(0, 520 - distanceBetween(hunter, candidate)) * 0.25;
+        if (score < bestScore) {
+          best = candidate;
+          bestScore = score;
+        }
+      });
+    });
+
+    if (best) return best;
+
+    const fallback = findNearestSafePosition(gate.x + primary.x * 88, gate.y + primary.y * 88, survivor.radius);
+    return distanceBetween(fallback, gate) <= 112 ? fallback : findNearestSafePosition(gate.x, gate.y, survivor.radius);
   }
 
   function updateAIHatchObjective(survivor, dt, now) {
@@ -3064,7 +4677,7 @@
       startHatchEscape(survivor, now);
       return true;
     }
-    const crawlSpeed = DOWNED_CRAWL_SPEED * getSurvivorMultiplier(survivor, "crawlSpeed") * 0.85 * getSurvivorMoveSpeedMultiplier(survivor, now);
+    const crawlSpeed = getDownedCrawlSpeed(survivor) * 0.85;
     const moved = moveActorToPoint(survivor, hatch.x, hatch.y, crawlSpeed, dt, now);
     if (moved < 0.4 && now > survivor.repathAt - 120) survivor.path = [];
     return true;
@@ -3079,8 +4692,8 @@
       if (point.completed || isRepairingPoint(survivor, point)) return;
       if (shouldHoldFinalCipherPoint(point, now) && (!finalCipherGuard || finalCipherGuard.survivor !== survivor)) return;
       const distance = distanceBetween(survivor, point) * 0.68;
-      const progressBonus = point.progress * 980;
-      const hunterPenalty = Math.max(0, 520 - distanceBetween(hunter, point));
+      const progressBonus = point.progress * 2800;
+      const hunterPenalty = Math.max(0, 620 - distanceBetween(hunter, point)) * 1.15;
       const score = distance + hunterPenalty - progressBonus;
       if (score < bestScore) {
         best = point;
@@ -3088,7 +4701,7 @@
       }
     });
 
-    survivor.objectiveDecision = best ? { kind: "repair", target: best, until: now + 2400 } : null;
+    survivor.objectiveDecision = best ? { kind: "repair", target: best, until: now + 4200 } : null;
     return best;
   }
 
@@ -3112,7 +4725,10 @@
     gates.forEach((gate) => {
       const distance = distanceBetween(survivor, gate);
       const hunterPenalty = Math.max(0, 620 - distanceBetween(hunter, gate));
-      const score = distance + hunterPenalty * 0.65;
+      const openedBonus = gate.opened ? 900 : 0;
+      const progressBonus = gate.opened ? 0 : (gate.progress || 0) * 520;
+      const workerBonus = gate.opened ? 0 : Math.min(2, gate.workers.length) * 90;
+      const score = distance + hunterPenalty * 0.65 - openedBonus - progressBonus - workerBonus;
       if (score < bestScore) {
         best = gate;
         bestScore = score;
@@ -3125,7 +4741,7 @@
   function shouldKeepObjectiveDecision(survivor, now, kind) {
     const decision = survivor.objectiveDecision;
     if (!decision || decision.kind !== kind || now >= decision.until) return false;
-    if (kind === "repair") return !decision.target.completed && !isRepairingPoint(survivor, decision.target);
+    if (kind === "repair") return !decision.target.completed;
     if (kind === "escape" && decision.target && !decision.target.opened && exitGates.some((gate) => gate.opened)) return false;
     return areExitsPowered();
   }
@@ -3137,11 +4753,23 @@
   function shouldHoldFinalCipherPoint(point, now = performance.now()) {
     return isFinalCipherPoint(point) &&
       (point.progress || 0) >= FINAL_CIPHER_PRIME_PROGRESS &&
+      hasTeamPendingAdrenaline() &&
       !shouldPopPrimedFinalCipher(now);
   }
 
   function shouldCompletePrimedFinalCipher(actor, now = performance.now()) {
-    return Boolean(actor && actor.kind === "player") || shouldPopPrimedFinalCipher(now);
+    return Boolean(actor && actor.kind === "player") || !hasTeamPendingAdrenaline() || shouldPopPrimedFinalCipher(now);
+  }
+
+  function hasTeamPendingAdrenaline() {
+    return getSurvivors().some((survivor) => {
+      return !survivor.escaped &&
+        survivor.state !== "eliminated" &&
+        survivor.state !== "seated" &&
+        survivor.state !== "carried" &&
+        hasSurvivorBadge(survivor, "adrenaline") &&
+        !survivor.adrenalineTriggered;
+    });
   }
 
   function shouldPopPrimedFinalCipher(now = performance.now()) {
@@ -3261,6 +4889,7 @@
   }
 
   function handleAIInteraction(survivor, now, hunterDistance) {
+    if (survivor.state !== "healthy" && survivor.state !== "injured") return;
     if (survivor.action || now < survivor.nextInteractAt) return;
 
     const escapePoint = getKiteEscapeDestination(survivor, hunterDistance, now);
@@ -3292,7 +4921,63 @@
     }
   }
 
+  function updateAIPalletMindgame(survivor, dt, now, hunterDistance) {
+    const mindgame = survivor.palletMindgame;
+    if (!mindgame) return false;
+    const pallet = mindgame.pallet;
+    if (!pallet || pallet.label !== "standing" || survivor.state !== "healthy" || hunter.target !== survivor) {
+      survivor.palletMindgame = null;
+      return false;
+    }
+
+    const hunterPalletDistance = distanceBetween(hunter, pallet);
+    const hunterSwinging = hunter.action && hunter.action.kind === "attackWindup";
+    if (hunterPalletDistance <= 92 && (hunterSwinging || hunterDistance < 132 || now >= mindgame.until)) {
+      dropPallet(pallet, now);
+      survivor.palletMindgame = null;
+      survivor.nextInteractAt = now + 850;
+      return true;
+    }
+
+    if (now >= mindgame.until) {
+      survivor.palletMindgame = null;
+      return false;
+    }
+
+    survivor.vx = 0;
+    survivor.vy = 0;
+    setAISurvivorTask(survivor, "palletMindgame", now, AI_PALLET_MINDGAME_DURATION);
+    return true;
+  }
+
+  function tryStartAIPalletMindgame(survivor, now, hunterDistance) {
+    if (survivor.palletMindgame || survivor.state !== "healthy" || hunter.target !== survivor) return false;
+    if (!isConfidentAIPalletPlayer(survivor) || hunterDistance < 96 || hunterDistance > 230) return false;
+    if (aiTeamPlan.rescuer === survivor && getAIChairRescueTarget(survivor)) return false;
+    const pallet = findNearestPallet(survivor, "standing", 82);
+    if (!pallet || distanceBetween(hunter, pallet) > 168) return false;
+    survivor.palletMindgame = { pallet, until: now + AI_PALLET_MINDGAME_DURATION };
+    survivor.path = [];
+    survivor.pathGoal = null;
+    survivor.vx = 0;
+    survivor.vy = 0;
+    return true;
+  }
+
+  function isConfidentAIPalletPlayer(survivor) {
+    const character = getSurvivorCharacter(survivor);
+    return getSurvivorRoleLabel(survivor) === "牵制位" || (character.chaseDifficulty || 1) >= 1.12;
+  }
+
+  function setAISurvivorTask(survivor, kind, now, minimumDuration) {
+    const task = survivor.aiTask;
+    if (!task || task.kind !== kind || now >= task.until) {
+      survivor.aiTask = { kind, until: now + minimumDuration };
+    }
+  }
+
   function moveAISurvivorAway(survivor, dt, now, hunterDistance) {
+    setAISurvivorTask(survivor, "kite", now, 700);
     const destination = getKiteEscapeDestination(survivor, hunterDistance, now);
     const routeWindow = findUsefulWindowForRoute(survivor, destination, 118);
     if (routeWindow && hunterDistance < 430 && !survivor.action && now >= survivor.nextInteractAt) {
@@ -3308,8 +4993,40 @@
     const moved = moveActorToPoint(survivor, destination.x, destination.y, speed, dt, now);
     if (moved < 0.5 && now > survivor.repathAt - 120) {
       survivor.path = [];
-      survivor.wanderTarget = pickWanderTarget();
+      survivor.pathGoal = null;
+      survivor.repathAt = 0;
+      survivor.kiteDecision = null;
+      const fallback = getAIReachableUnstuckPoint(survivor, hunter);
+      if (fallback) moveActorToPoint(survivor, fallback.x, fallback.y, speed, dt, now);
     }
+  }
+
+  function getAIReachableUnstuckPoint(survivor, threat) {
+    const away = normalizeVector(survivor.x - threat.x, survivor.y - threat.y);
+    const direction = away.x || away.y ? away : { x: 1, y: 0 };
+    const tangent = { x: -direction.y, y: direction.x };
+    const offsets = [
+      { forward: 1, side: 0 },
+      { forward: 0.72, side: 0.72 },
+      { forward: 0.72, side: -0.72 },
+      { forward: 0.2, side: 1 },
+      { forward: 0.2, side: -1 },
+      { forward: -0.5, side: 0.9 },
+      { forward: -0.5, side: -0.9 }
+    ];
+    const distances = [220, 160, 110];
+    for (const distance of distances) {
+      for (const offset of offsets) {
+        const point = {
+          x: survivor.x + direction.x * distance * offset.forward + tangent.x * distance * offset.side,
+          y: survivor.y + direction.y * distance * offset.forward + tangent.y * distance * offset.side
+        };
+        if (!isSafePosition(point.x, point.y, survivor.radius)) continue;
+        if (hasWalkableLine(survivor.x, survivor.y, point.x, point.y, survivor.radius)) return point;
+        if (findPath(survivor.x, survivor.y, point.x, point.y, survivor.radius).length > 0) return point;
+      }
+    }
+    return null;
   }
 
   function moveAISurvivorWander(survivor, dt, now) {
@@ -3500,6 +5217,7 @@
     let best = null;
     let bestScore = Infinity;
     windows.forEach((item) => {
+      if (isWindowBlockedForActor(item, actor)) return;
       const distance = distanceBetween(actor, item);
       if (distance > range) return;
       const normal = getObstacleNormal(item);
@@ -3550,8 +5268,8 @@
     return Math.hypot(actor.x - beforeX, actor.y - beforeY);
   }
 
-  function moveActorSmart(actor, dx, dy) {
-    if (actor === hunter && isSoulSiphonPhaseMove(dx, dy)) return moveActorPhasing(actor, dx, dy);
+  function moveActorSmart(actor, dx, dy, options = {}) {
+    if (!options.forceCollision && actor === hunter && isSoulSiphonPhaseMove(dx, dy)) return moveActorPhasing(actor, dx, dy);
     const beforeX = actor.x;
     const beforeY = actor.y;
     const distance = Math.hypot(dx, dy);
@@ -3570,7 +5288,7 @@
   function moveActorStep(actor, dx, dy) {
     const beforeX = actor.x;
     const beforeY = actor.y;
-    if (!collides(actor.x + dx, actor.y + dy, actor.radius)) {
+    if (!actorCollides(actor, actor.x + dx, actor.y + dy, actor.radius)) {
       actor.x += dx;
       actor.y += dy;
       resolveWallCornerOverlap(actor);
@@ -3583,12 +5301,16 @@
       : [[0, dy], [dx, 0], [0, dy * 0.72], [dx * 0.72, 0], [0, dy * 0.42], [dx * 0.42, 0]];
 
     for (const [tryDx, tryDy] of attempts) {
-      if (!collides(actor.x + tryDx, actor.y + tryDy, actor.radius)) {
+      if (!actorCollides(actor, actor.x + tryDx, actor.y + tryDy, actor.radius)) {
         actor.x += tryDx;
         actor.y += tryDy;
         resolveWallCornerOverlap(actor);
         return Math.hypot(actor.x - beforeX, actor.y - beforeY);
       }
+    }
+
+    if (maybeTriggerMirrorBloomOnCurtain(actor, beforeX + dx, beforeY + dy)) {
+      return Math.hypot(actor.x - beforeX, actor.y - beforeY);
     }
 
     actor.x += dx;
@@ -3655,6 +5377,9 @@
   }
 
   function moveActorToPoint(actor, targetX, targetY, speed, dt, now) {
+    if (actor !== hunter && actor.state === "downed") {
+      speed = Math.min(speed, getDownedCrawlSpeed(actor));
+    }
     const directDistance = Math.hypot(targetX - actor.x, targetY - actor.y);
     if (directDistance < 4) {
       actor.vx = 0;
@@ -3913,6 +5638,11 @@
     hunter.angle = turnToward(hunter.angle, desiredAttackAngle, hunter.turnSpeed * dt);
 
     maybeUseAILanternKeeperSkill(target, now, distance);
+    maybeUseAIGhostfire(target, now, distance);
+    maybeUseAISoulBinderSkill(target, now, distance);
+    if (maybeUseAIDancerSkill(target, now, distance)) return;
+    if (maybeUseAIMirrorGhostSkill(target, now, distance)) return;
+    if (maybeUseAITwinSwordSkill(target, now, distance)) return;
     if (!isActorDecoyTarget(target) && maybeStartAISawDash(target, now, distance)) return;
 
     if (isSurvivorInHunterAttackCone(target) && canAttack) {
@@ -4262,6 +5992,14 @@
   }
 
   function handlePlayerSkill(now) {
+    if (selectedRole === PLAYER_ROLE.survivor && canUseTunerCipherTune(player)) {
+      useTunerCipherTune(player, now);
+      return;
+    }
+    if (selectedRole === PLAYER_ROLE.survivor && canUseTunerEcho(player, now)) {
+      useTunerEcho(player, now);
+      return;
+    }
     if (selectedRole === PLAYER_ROLE.survivor && canUseGeneralSkill(player, now)) {
       useGeneralSkill(player, now);
       return;
@@ -4302,12 +6040,20 @@
       startSawDash(now);
       return;
     }
+    if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+      startDancePointAim(now);
+      return;
+    }
     if (selectedRole === PLAYER_ROLE.hunter && isTwinSword()) {
       switchTwinForm(now);
       return;
     }
     if (selectedRole === PLAYER_ROLE.hunter && isSoulBinder()) {
       startSoulSiphonSelection(now);
+      return;
+    }
+    if (selectedRole === PLAYER_ROLE.hunter && isMirrorGhost()) {
+      startMirrorCurtainAim(now);
       return;
     }
     if (canRecallSoulLamp(now)) {
@@ -4323,6 +6069,10 @@
   function handlePlayerShadowSkill(now) {
     if (selectedRole === PLAYER_ROLE.survivor && isActor(player)) {
       toggleMagicShowMode(player);
+      return;
+    }
+    if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+      useInfiniteDance(now);
       return;
     }
     if (canShadowTeleport(now)) {
@@ -4440,6 +6190,173 @@
     return true;
   }
 
+  function maybeUseAIGhostfire(target, now, distance) {
+    if (selectedRole === PLAYER_ROLE.hunter || !target || isActorDecoyTarget(target) || !canUseGhostfire(now)) return false;
+    if (!soulLamps.some((lamp) => distanceBetween(lamp, target) <= GHOSTFIRE_RANGE)) return false;
+    return useGhostfire(now);
+  }
+
+  function maybeUseAISoulBinderSkill(target, now, distance) {
+    if (selectedRole === PLAYER_ROLE.hunter || !isSoulBinder() || hunter.carrying || hunter.action) return false;
+    if (tryAISoulReturn(now)) return true;
+    if (target && !isActorDecoyTarget(target) && tryAISoulSiphon(target, now, distance)) return true;
+    return tryAIBorrowSoul(target, now, distance);
+  }
+
+  function tryAISoulReturn(now) {
+    if (!canStartSoulReturnSelection(now)) return false;
+    const seated = getSurvivors()
+      .filter((survivor) => survivor.state === "seated")
+      .sort((a, b) => (b.chairProgress || 0) - (a.chairProgress || 0))[0];
+    if (!seated) return false;
+    if ((seated.chairProgress || 0) < 0.18 && !isRescuerNearChair(seated)) return false;
+    return applySoulReturn(seated, now);
+  }
+
+  function isRescuerNearChair(seated) {
+    if (!seated || !seated.chair) return false;
+    return getSurvivors().some((survivor) => {
+      if (survivor === seated || survivor.escaped || survivor.state === "downed" || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return false;
+      return distanceBetween(survivor, seated.chair) <= AI_RESCUE_HUNTER_NEAR_CHAIR;
+    });
+  }
+
+  function tryAISoulSiphon(target, now, distance) {
+    if (!canStartSoulSiphon(now)) return false;
+    const siphonTarget = getAISoulSiphonTarget(target);
+    if (!siphonTarget) return false;
+    const targetDistance = distanceBetween(hunter, siphonTarget);
+    if (targetDistance < AI_SOUL_SIPHON_MIN_RANGE || targetDistance > AI_SOUL_SIPHON_MAX_RANGE) return false;
+    if (siphonTarget !== target && distance < hunter.attackRange * 1.35) return false;
+    return startSoulSiphon(siphonTarget, now);
+  }
+
+  function getAISoulSiphonTarget(target) {
+    if (target && !target.escaped && target.state !== "eliminated" && getSoulMarks(target) > 0) return target;
+    return getSurvivors()
+      .filter((survivor) => !survivor.escaped && survivor.state !== "eliminated" && survivor.state !== "seated" && survivor.state !== "carried" && getSoulMarks(survivor) > 0)
+      .sort((a, b) => {
+        const markDelta = getSoulMarks(b) - getSoulMarks(a);
+        if (markDelta !== 0) return markDelta;
+        return distanceBetween(hunter, a) - distanceBetween(hunter, b);
+      })[0] || null;
+  }
+
+  function tryAIBorrowSoul(target, now, distance) {
+    if (!canBorrowSoul(now) || now < (hunter.borrowSoulUntil || 0)) return false;
+    const total = getTotalSoulMarks();
+    if (total <= 0) return false;
+    const enoughStoredPower = total >= 5;
+    const chaseNeedsBoost = target && distance > hunter.attackRange * 1.7 && distance < 680 && total >= 2;
+    if (!enoughStoredPower && !chaseNeedsBoost) return false;
+    return borrowSoul(now);
+  }
+
+  function maybeUseAIMirrorGhostSkill(target, now, distance) {
+    if (selectedRole === PLAYER_ROLE.hunter || !isMirrorGhost() || hunter.carrying || hunter.action || isActorDecoyTarget(target)) return false;
+    if (tryAIMirrorLight(now)) return true;
+    tryAIMirrorCurtain(target, now, distance);
+    return false;
+  }
+
+  function maybeUseAITwinSwordSkill(target, now, distance) {
+    if (selectedRole === PLAYER_ROLE.hunter || !isTwinSword() || hunter.carrying || hunter.action || isActorDecoyTarget(target)) return false;
+    if (!canUseTwinSwordSkill(now)) return false;
+    const aim = {
+      targetX: target.x + (target.vx || 0) * 0.18,
+      targetY: target.y + (target.vy || 0) * 0.18,
+      pointerId: null
+    };
+    if ((hunter.twinFlyingSwords || 0) > 0 && distance > 210 && distance < TWIN_FLYING_SWORD_RANGE && hasWalkableLine(hunter.x, hunter.y, target.x, target.y, hunter.radius)) {
+      return fireTwinFlyingSword(now, aim);
+    }
+    if (hunter.presenceTier >= 1 && canActivateTwinDualCast(now) && distance < 460 && Math.random() < 0.14) {
+      return activateTwinDualCast(now);
+    }
+    if (isTwinForm(TWIN_FORM_QINGTIAN)) {
+      if (!hunter.twinTimePower && (hunter.twinIntent || 0) >= TWIN_TIME_POWER_COST && distance < 560) {
+        hunter.twinTimeMode = "self";
+        return castTwinTimePower(now);
+      }
+      if ((hunter.twinIntent || 0) >= TWIN_SPACE_POWER_COST && distance > 310 && distance < TWIN_SPACE_POWER_RANGE && hasWalkableLine(hunter.x, hunter.y, target.x, target.y, hunter.radius)) {
+        return castTwinSpacePower(aim, now);
+      }
+      if (now >= (hunter.nextTwinFormAt || 0) && (distance > 470 || !hasWalkableLine(hunter.x, hunter.y, target.x, target.y, hunter.radius))) {
+        return switchTwinForm(now);
+      }
+      return false;
+    }
+    if (distance < TWIN_SHADOW_LOCK_CAST_RANGE && now >= (hunter.nextTwinShadowLockAt || 0)) {
+      return castTwinShadowLock(aim, now);
+    }
+    if (distance < TWIN_SHADOW_STRIKE_CAST_RANGE && now >= (hunter.nextTwinShadowStrikeAt || 0)) {
+      return castTwinShadowStrike(aim, now);
+    }
+    if (now >= (hunter.nextTwinFormAt || 0) && distance < 300) return switchTwinForm(now);
+    return false;
+  }
+
+  function maybeUseAIDancerSkill(target, now, distance) {
+    if (selectedRole === PLAYER_ROLE.hunter || !isDancer() || hunter.carrying || hunter.action || isActorDecoyTarget(target)) return false;
+    if (canUseInfiniteDance(now) && distance > 180 && distance < 560 && (danceLines.length > 0 || pendingDancePoint)) {
+      return useInfiniteDance(now);
+    }
+    if (hunter.presenceTier >= 1 && canUseDanceSpin(now) && distance > 260 && distance < 640 && Math.random() < 0.16) {
+      return useDanceSpin(now);
+    }
+    if (!canStartDanceStep(now) || distance < AI_DANCE_STEP_MIN_RANGE || distance > AI_DANCE_STEP_MAX_RANGE) return false;
+    if (!hasWalkableLine(hunter.x, hunter.y, target.x, target.y, hunter.radius)) return false;
+    return startDanceStep(target.x, target.y, now);
+  }
+
+  function tryAIMirrorLight(now) {
+    if (!canUseMirrorLight(now)) return false;
+    const affected = getSurvivors().filter((survivor) => {
+      if (survivor.escaped || survivor.state === "downed" || survivor.state === "eliminated" || survivor.state === "seated" || survivor.state === "carried") return false;
+      return mirrorRifts.some((rift) => distanceBetween(survivor, rift) <= MIRROR_LIGHT_RADIUS);
+    });
+    if (affected.length === 0) return false;
+    if (affected.length < 2 && distanceBetween(hunter, affected[0]) < hunter.attackRange * 1.25) return false;
+    return useMirrorLight(now);
+  }
+
+  function tryAIMirrorCurtain(target, now, distance) {
+    if (!target || !canAIPlaceMirrorCurtain(now, target, distance)) return false;
+    const line = getAIMirrorCurtainLine(target, distance);
+    if (!line) return false;
+    placeMirrorCurtain(line.start, line.end, now);
+    return true;
+  }
+
+  function canAIPlaceMirrorCurtain(now, target, distance) {
+    if (!target || target.escaped || target.state === "downed" || target.state === "eliminated" || target.state === "seated" || target.state === "carried") return false;
+    if (distance < AI_MIRROR_CURTAIN_PLACE_MIN_RANGE || distance > AI_MIRROR_CURTAIN_PLACE_MAX_RANGE) return false;
+    if (getMirrorCurtainCooldownLeft(now) > 0 || now < hunter.stunnedUntil || now < hunter.wipeUntil) return false;
+    if (!hasWalkableLine(hunter.x, hunter.y, target.x, target.y, hunter.radius)) return false;
+    return !mirrorCurtains.some((curtain) => distanceToSegment(target.x, target.y, curtain.x1, curtain.y1, curtain.x2, curtain.y2) <= MIRROR_CURTAIN_MAX_LENGTH * 0.72);
+  }
+
+  function getAIMirrorCurtainLine(target, distance) {
+    const toTarget = normalizeVector(target.x - hunter.x, target.y - hunter.y);
+    if (!toTarget.x && !toTarget.y) return null;
+    const normal = { x: -toTarget.y, y: toTarget.x };
+    const centerDistance = Math.min(distance * 0.68, distance - 48);
+    const center = {
+      x: hunter.x + toTarget.x * centerDistance,
+      y: hunter.y + toTarget.y * centerDistance
+    };
+    const halfLength = Math.min(MIRROR_CURTAIN_MAX_LENGTH, AI_MIRROR_CURTAIN_LENGTH) * 0.5;
+    const start = {
+      x: actorClamp(center.x - normal.x * halfLength, 70, world.width - 70),
+      y: actorClamp(center.y - normal.y * halfLength, 70, world.height - 70)
+    };
+    const end = {
+      x: actorClamp(center.x + normal.x * halfLength, 70, world.width - 70),
+      y: actorClamp(center.y + normal.y * halfLength, 70, world.height - 70)
+    };
+    return distanceBetween(start, end) >= MIRROR_CURTAIN_MIN_LENGTH ? { start, end } : null;
+  }
+
   function getSawDashConfig(short = false) {
     if (short) {
       return {
@@ -4457,7 +6374,7 @@
       turnSpeed: tierTwo ? SAW_DASH_TIER_TWO_TURN_SPEED : SAW_DASH_TURN_SPEED,
       noTimeLimit: tierTwo,
       noDistanceLimit: tierTwo,
-      durability: tierTwo && !isInfiniteSawboneMode() ? SAW_DASH_TIER_TWO_DURABILITY : null
+      durability: null
     };
   }
 
@@ -4674,6 +6591,12 @@
       if (decoyTarget) return decoyTarget;
     }
 
+    const lockedTarget = getValidHunterTargetLock(performance.now());
+    if (lockedTarget) return lockedTarget;
+
+    const committedRescueTarget = getCommittedRescueChaseTarget(performance.now());
+    if (committedRescueTarget) return committedRescueTarget;
+
     let best = null;
     let bestScore = Infinity;
     getSurvivors().forEach((survivor) => {
@@ -4684,7 +6607,7 @@
       const distance = distanceBetween(hunter, survivor);
       const healthPriority = getTargetHealthPriority(survivor);
       const chaseDifficulty = getTargetChaseDifficulty(survivor);
-      const stickiness = survivor === hunter.target ? -115 : 0;
+      const stickiness = getHunterTargetStickiness(survivor, performance.now());
       const objectivePressure = getTargetObjectivePressure(survivor);
       const score = healthPriority * 460 + distance * chaseDifficulty + objectivePressure + stickiness;
       if (score < bestScore) {
@@ -4693,6 +6616,61 @@
       }
     });
     return best;
+  }
+
+  function getCommittedRescueChaseTarget(now) {
+    const target = hunter.target;
+    if (!target || target !== aiTeamPlan.rescuer || !isValidHunterChaseTarget(target, now)) return null;
+    if (distanceBetween(hunter, target) > HUNTER_TARGET_LOCK_MAX_DISTANCE) return null;
+    return getSurvivors().some((survivor) => survivor.state === "seated" && survivor.chair) ? target : null;
+  }
+
+  function getValidHunterTargetLock(now) {
+    const target = hunter.targetLock || hunter.target;
+    if (!isValidHunterChaseTarget(target, now)) {
+      clearHunterTargetLock();
+      return null;
+    }
+    if (now >= (hunter.targetLockUntil || 0)) return null;
+    if (distanceBetween(hunter, target) > HUNTER_TARGET_LOCK_MAX_DISTANCE) {
+      clearHunterTargetLock();
+      return null;
+    }
+    return target;
+  }
+
+  function isValidHunterChaseTarget(target, now = performance.now()) {
+    return Boolean(target &&
+      !isActorDecoyTarget(target) &&
+      !target.escaped &&
+      target.state !== "downed" &&
+      target.state !== "seated" &&
+      target.state !== "carried" &&
+      target.state !== "eliminated" &&
+      !isSurvivorInvisible(target, now) &&
+      canAIHunterSeeThroughPerfume(target, now));
+  }
+
+  function clearHunterTargetLock() {
+    hunter.targetLock = null;
+    hunter.targetLockUntil = 0;
+  }
+
+  function lockHunterTarget(target, now, duration = HUNTER_TARGET_LOCK_AFTER_HIT) {
+    if (!isValidHunterChaseTarget(target, now)) return;
+    hunter.target = target;
+    hunter.targetLock = target;
+    hunter.targetLockUntil = Math.max(hunter.targetLockUntil || 0, now + duration);
+    hunter.lastTargetHitAt = now;
+  }
+
+  function getHunterTargetStickiness(survivor, now) {
+    if (survivor !== hunter.target && survivor !== hunter.targetLock) return 0;
+    const hitAge = now - (hunter.lastTargetHitAt || 0);
+    const hitBonus = hitAge >= 0 && hitAge < HUNTER_TARGET_LOCK_AFTER_HIT
+      ? HUNTER_TARGET_STICKY_HIT_BONUS * (1 - hitAge / HUNTER_TARGET_LOCK_AFTER_HIT)
+      : 0;
+    return -(HUNTER_TARGET_STICKY_BASE + hitBonus);
   }
 
   function isActorDecoyTarget(target) {
@@ -4885,14 +6863,17 @@
     if (absorbGeneralRideHit(survivor, now)) return;
     if (shouldQueueMedicRescueShock(survivor, terrorShock)) {
       queueMedicRescueShockDamage(survivor, getQueuedHitDamage(survivor, options, terrorShock), now);
+      lockHunterTarget(survivor, now);
       return;
     }
     if (isBorrowedTimeProtected(survivor, now)) {
       queueBorrowedTimeDamage(survivor, getQueuedHitDamage(survivor, options, terrorShock), now);
+      lockHunterTarget(survivor, now);
       return;
     }
     if (isMedicAdrenalineProtected(survivor, now)) {
       queueMedicAdrenalineDamage(survivor, getQueuedHitDamage(survivor, options, terrorShock), now);
+      lockHunterTarget(survivor, now);
       return;
     }
     if (options.applyBoneBleed) applyBoneBleed(survivor, now);
@@ -4912,6 +6893,7 @@
     if (survivor.action && survivor.action.kind === "escaping") {
       survivor.action = null;
     }
+    const interruptedRescueTarget = survivor.action && survivor.action.kind === "rescuing" ? survivor.action.target : null;
     if (survivor.action && survivor.action.kind === "rescuing") {
       survivor.action = null;
     }
@@ -4922,17 +6904,24 @@
     const wasDowned = survivor.state === "downed";
     if (options.detentionDown || terrorShock && options.allowTerrorShock !== false) {
       applySurvivorDamage(survivor, now, getQueuedHitDamage(survivor, options, terrorShock));
+      createMirrorRiftAt(survivor, now);
       trackHunterFirstHitDownUnlock(survivor, now, wasDowned);
       trackHunterRemoteDownUnlock(survivor, now, wasDowned, options);
       if (!wasDowned && survivor.state === "downed") triggerWantedBadge(survivor, now);
+      lockHunterTarget(survivor, now);
       return;
     }
 
     applySurvivorDamage(survivor, now, options.damage ?? 1);
+    if (interruptedRescueTarget && survivor.kind === "ai" && survivor.state !== "downed") {
+      survivor.aiHitRecoveryRescue = { target: interruptedRescueTarget, until: now + 1800 };
+    }
+    createMirrorRiftAt(survivor, now);
     trackHunterFirstHitDownUnlock(survivor, now, wasDowned);
     trackHunterRemoteDownUnlock(survivor, now, wasDowned, options);
     if (!wasDowned && survivor.state === "downed") triggerWantedBadge(survivor, now);
     triggerActorHitPerformance(survivor, now);
+    lockHunterTarget(survivor, now);
   }
 
   function hasMedicShield(survivor, now = performance.now()) {
@@ -4951,7 +6940,7 @@
     if (!hasMedicShield(survivor, now)) return false;
     survivor.medicShieldHits = 0;
     survivor.medicShieldUntil = 0;
-    knockHunterBackFrom(survivor, MEDIC_SHIELD_KNOCKBACK);
+    knockHunterBackFrom(survivor, MEDIC_SHIELD_KNOCKBACK, now);
     stunHunterFromMedicShield(now);
     showAssistAlert("护盾破碎", now, 900);
     chasePulseUntil = now + 360;
@@ -4964,6 +6953,8 @@
       hunter.action = null;
       hunter.lastAttackHit = false;
     }
+    cancelSawDashByControl(now);
+    cancelDanceStepByControl(now);
     if (hunter.action && hunter.action.kind === "pickingUp") {
       cancelPickupAction(hunter.action, now, true);
       hunter.action = null;
@@ -4978,7 +6969,9 @@
     hunter.vy = 0;
   }
 
-  function knockHunterBackFrom(source, distance) {
+  function knockHunterBackFrom(source, distance, now = performance.now()) {
+    cancelSawDashByControl(now);
+    cancelDanceStepByControl(now);
     const angle = Math.atan2(hunter.y - source.y, hunter.x - source.x);
     const fallbackAngle = Number.isFinite(angle) ? angle : hunter.angle + Math.PI;
     const safe = findNearestSafePosition(
@@ -4992,6 +6985,31 @@
     hunter.vy = 0;
     hunter.path = [];
     hunter.pathGoal = null;
+  }
+
+  function cancelSawDashByControl(now) {
+    if (!hunter.action || hunter.action.kind !== "sawDash") return false;
+    hunter.action = null;
+    hunter.shortSawAvailableUntil = 0;
+    hunter.pendingSawWipe = false;
+    hunter.pendingSawWipeAt = 0;
+    hunter.vx = 0;
+    hunter.vy = 0;
+    hunter.status = hunter.target ? "chasing" : "ready";
+    showAssistAlert("拉锯被打断", now, 900);
+    chasePulseUntil = now + 360;
+    return true;
+  }
+
+  function cancelDanceStepByControl(now) {
+    if (!hunter.action || hunter.action.kind !== "danceStep") return false;
+    hunter.action = null;
+    hunter.vx = 0;
+    hunter.vy = 0;
+    hunter.status = hunter.target ? "chasing" : "ready";
+    showAssistAlert("舞步被打断", now, 900);
+    chasePulseUntil = now + 360;
+    return true;
   }
 
   function isMedicAdrenalineProtected(survivor, now = performance.now()) {
@@ -5110,8 +7128,9 @@
     });
   }
 
-  function updateGeneralEffects(now) {
+  function updateGeneralEffects(now, dt = 0) {
     getSurvivors().forEach((survivor) => {
+      updateGeneralRage(survivor, now, dt);
       if (isGeneral(survivor) && survivor.generalRideUntil && now >= survivor.generalRideUntil) {
         finishGeneralRide(survivor, now, "timeout");
       }
@@ -5166,7 +7185,6 @@
 
   function canStartSoulSiphon(now) {
     return matchStarted &&
-      selectedRole === PLAYER_ROLE.hunter &&
       isSoulBinder() &&
       !hunter.action &&
       !hunter.carrying &&
@@ -5208,7 +7226,6 @@
 
   function canBorrowSoul(now) {
     return matchStarted &&
-      selectedRole === PLAYER_ROLE.hunter &&
       isSoulBinder() &&
       !hunter.action &&
       !hunter.carrying &&
@@ -5236,7 +7253,6 @@
 
   function canStartSoulReturnSelection(now) {
     return matchStarted &&
-      selectedRole === PLAYER_ROLE.hunter &&
       isSoulBinder() &&
       hunter.presenceTier >= 2 &&
       !hunter.action &&
@@ -5343,6 +7359,7 @@
         survivor.state = "injured";
         survivor.injuredAt = now;
         survivor.healProgress = 0;
+        triggerTunerSorrowCalibrations(survivor, now);
         if (damageProgress + DAMAGE_PROGRESS_EPSILON < 1) {
           survivor.damageProgress = damageProgress;
           survivor.boostUntil = now + getSurvivorHitBoostDuration(survivor, 1800);
@@ -5365,6 +7382,19 @@
     }
   }
 
+  function triggerTunerSorrowCalibrations(injuredSurvivor, now) {
+    getSurvivors().forEach((tuner) => {
+      if (tuner === injuredSurvivor || !isTuner(tuner)) return;
+      if (now < (tuner.nextTunerSorrowCalibrationAt || 0)) return;
+      const action = tuner.action;
+      if (!action || action.kind !== "repairing" || !action.point || action.point.completed) return;
+      tuner.nextTunerSorrowCalibrationAt = now + TUNER_SORROW_CALIBRATION_COOLDOWN;
+      action.forcedTunerCalibrations = (action.forcedTunerCalibrations || 0) + TUNER_SORROW_CALIBRATION_COUNT;
+      if (!action.calibration) startRepairCalibration(action, now, true);
+      showAssistAlert("悲痛校准 x3", now, 950);
+    });
+  }
+
   function isTerrorShockVulnerable(survivor) {
     return Boolean(survivor.action && ["vaulting", "rescuing", "repairing", "dismantlingLamp"].includes(survivor.action.kind));
   }
@@ -5384,6 +7414,7 @@
     survivor.generalRideUntil = 0;
     survivor.generalRideWhips = 0;
     survivor.nextGeneralWhipAt = 0;
+    survivor.generalRage = 0;
     survivor.chair = null;
     survivor.carryProgress = 0;
     survivor.downedAt = wasDowned && survivor.downedAt ? survivor.downedAt : performance.now();
@@ -5406,6 +7437,7 @@
     pallets.forEach((pallet) => {
       pallet.label = "standing";
     });
+    invalidateCollisionRects();
 
     repairPoints.forEach((point) => {
       point.progress = 0;
@@ -5423,9 +7455,18 @@
     soulLamps.length = 0;
     assistPeeperWards.length = 0;
     packageProjectiles.length = 0;
+    ghostfireProjectiles.length = 0;
     stitchPackDrops.length = 0;
     actorDecoys.length = 0;
     perfumeMists.length = 0;
+    tunerEchoLines.length = 0;
+    mirrorRifts.length = 0;
+    mirrorCurtains.length = 0;
+    danceLines.length = 0;
+    pendingDancePoint = null;
+    pendingDanceLine = null;
+    dancePointAim = null;
+    mirrorCurtainAim = null;
     twinShadowZones.length = 0;
     twinSwordProjectiles.length = 0;
     twinAim = null;
@@ -5433,6 +7474,7 @@
     activeShiftPortals = null;
     assistListenTargets = [];
     finalCipherGuard = null;
+    aiTeamPlan = { until: 0, rescuer: null, gateOpener: null, repairLead: null };
     nextSoulLampAt = 0;
     lanternAlert = null;
     playerChaseTaskState = null;
@@ -5454,10 +7496,15 @@
     hunter.vx = 0;
     hunter.vy = 0;
     hunter.angle = Math.PI;
+    hunter.target = null;
+    hunter.targetLock = null;
+    hunter.targetLockUntil = 0;
+    hunter.lastTargetHitAt = 0;
     hunter.lastAttackAt = -10000;
     hunter.wipeUntil = 0;
     hunter.lastAttackHit = false;
     hunter.stunnedUntil = 0;
+    hunter.tunerEchoSlowUntil = 0;
     hunter.presenceHits = 0;
     hunter.presenceTier = 0;
     hunter.rampagePresenceGained = 0;
@@ -5468,7 +7515,15 @@
     hunter.trumpCardSelecting = false;
     hunter.trumpCardSelectionUntil = 0;
     hunter.excitementGuardUntil = 0;
+    hunter.mirrorTeleportReadyAt = 0;
+    hunter.nextMirrorCurtainAt = 0;
+    hunter.nextMirrorLightAt = 0;
+    hunter.nextDanceStepAt = 0;
+    hunter.nextDanceSpinAt = 0;
+    hunter.nextInfiniteDanceAt = 0;
+    hunter.infiniteDanceUntil = 0;
     hunter.nextShadowTeleportAt = 0;
+    hunter.nextGhostfireAt = 0;
     hunter.nextAssistAt = 0;
     hunter.pendingBlinkAttackUntil = 0;
     hunter.assistListenUntil = 0;
@@ -5549,11 +7604,11 @@
 
     if (isKiteSimulatorMode()) {
       hunter.badges = getAIHunterBadges();
-      applyHunterCharacter("standard");
+      applyHunterCharacter(selectedHunterCharacter);
       hunter.assistSkill = null;
       hunter.target = player;
       lanternAlert = {
-        text: "娱乐模式 · 牵制模拟器",
+        text: `娱乐模式 · 牵制模拟器 · ${getHunterCharacter().name}`,
         until: performance.now() + 1800
       };
     }
@@ -5589,7 +7644,7 @@
   }
 
   function prepareHunterSurvivorPreview() {
-    previewSurvivorCharacterOrder = shuffled(AI_SURVIVOR_CHARACTER_ORDER);
+    previewSurvivorCharacterOrder = pickAICharacters(getSurvivors().length);
   }
 
   function updateHunterSurvivorPreview(role = pendingRole) {
@@ -5606,7 +7661,7 @@
 
   function startMatch(role, characterId = null) {
     currentMode = GAME_MODE.normal;
-    if (role === PLAYER_ROLE.hunter && characterId === TWIN_SWORD_ID && !hiddenHunterUnlocked) {
+    if (role === PLAYER_ROLE.hunter && characterId === TWIN_SWORD_ID && shouldUseCharacterUnlocks() && !hiddenHunterUnlocked) {
       showCharacterSelection(role);
       return;
     }
@@ -5625,7 +7680,7 @@
 
   function selectCharacterForSetup(role, characterId) {
     if (role !== pendingRole) return;
-    if (role === PLAYER_ROLE.hunter && characterId === TWIN_SWORD_ID && !hiddenHunterUnlocked) {
+    if (role === PLAYER_ROLE.hunter && characterId === TWIN_SWORD_ID && shouldUseCharacterUnlocks() && !hiddenHunterUnlocked) {
       showCharacterSelection(role);
       return;
     }
@@ -5636,6 +7691,10 @@
     selectedCharacterForSetup = characterId;
     if (role === PLAYER_ROLE.survivor) selectedSurvivorCharacter = characterId;
     if (role === PLAYER_ROLE.hunter) selectedHunterCharacter = characterId;
+    if (pendingMode === GAME_MODE.kiteSimulator && role === PLAYER_ROLE.hunter) {
+      startKiteSimulatorMode(selectedSurvivorCharacter, characterId);
+      return;
+    }
     setupStep = "badges";
     updateSetupTitle();
     updateSetupPanels();
@@ -5656,13 +7715,21 @@
       return;
     }
     if (pendingMode === GAME_MODE.kiteSimulator && pendingRole === PLAYER_ROLE.survivor) {
-      startKiteSimulatorMode(selectedCharacterForSetup);
+      showKiteSimulatorHunterSelection();
       return;
     }
     startMatch(pendingRole, selectedCharacterForSetup);
   }
 
   function backSetupStep() {
+    if (pendingMode === GAME_MODE.kiteSimulator && pendingRole === PLAYER_ROLE.hunter && setupStep === "character") {
+      pendingRole = PLAYER_ROLE.survivor;
+      setupStep = "badges";
+      selectedCharacterForSetup = selectedSurvivorCharacter;
+      updateSetupTitle();
+      updateSetupPanels();
+      return;
+    }
     if (setupStep === "assist") {
       setupStep = "badges";
       updateSetupTitle();
@@ -5681,7 +7748,7 @@
   function updateSetupTitle() {
     if (!roleDialogTitle || !pendingRole) return;
     const roleName = pendingRole === PLAYER_ROLE.hunter ? "追捕者" : "逃生者";
-    if (pendingMode === GAME_MODE.kiteSimulator && setupStep === "character") roleDialogTitle.textContent = "牵制模拟器 · 选择逃生者";
+    if (pendingMode === GAME_MODE.kiteSimulator && setupStep === "character") roleDialogTitle.textContent = pendingRole === PLAYER_ROLE.hunter ? "牵制模拟器 · 选择人机追捕者" : "牵制模拟器 · 选择逃生者";
     else if (setupStep === "badges") roleDialogTitle.textContent = `选择${roleName}徽章`;
     else if (setupStep === "assist") roleDialogTitle.textContent = "选择辅助技能";
     else roleDialogTitle.textContent = `选择${roleName}`;
@@ -5718,7 +7785,9 @@
     const visible = Boolean(pendingRole) && setupStep !== "character";
     characterNextButton.classList.toggle("is-hidden", !visible);
     if (!visible) return;
-    characterNextButton.textContent = setupStep === "assist" || pendingRole === PLAYER_ROLE.survivor ? "开始游戏" : "下一步";
+    characterNextButton.textContent = pendingMode === GAME_MODE.kiteSimulator && pendingRole === PLAYER_ROLE.survivor
+      ? "选择追捕者"
+      : setupStep === "assist" || pendingRole === PLAYER_ROLE.survivor ? "开始游戏" : "下一步";
   }
 
   function startInfiniteSawboneMode() {
@@ -5750,14 +7819,25 @@
     showCharacterSelection(PLAYER_ROLE.survivor);
   }
 
-  function startKiteSimulatorMode(characterId = null) {
+  function showKiteSimulatorHunterSelection() {
+    pendingRole = PLAYER_ROLE.hunter;
+    setupStep = "character";
+    selectedCharacterForSetup = selectedHunterCharacter;
+    updateSetupTitle();
+    updateSetupPanels();
+    updateHunterSurvivorPreview(PLAYER_ROLE.hunter);
+    updateHiddenUnlockPanel(PLAYER_ROLE.hunter);
+  }
+
+  function startKiteSimulatorMode(survivorCharacterId = null, hunterCharacterId = null) {
     currentMode = GAME_MODE.kiteSimulator;
     pendingMode = null;
     selectedRole = PLAYER_ROLE.survivor;
-    if (characterId) selectedSurvivorCharacter = characterId;
+    if (survivorCharacterId) selectedSurvivorCharacter = survivorCharacterId;
+    if (hunterCharacterId) selectedHunterCharacter = hunterCharacterId;
     assignCharactersForMatch();
     hunter.badges = getAIHunterBadges();
-    applyHunterCharacter("standard");
+    applyHunterCharacter(selectedHunterCharacter);
     hunter.assistSkill = null;
     resetMatch();
     matchStarted = true;
@@ -5768,7 +7848,7 @@
     if (!selectedRole) return;
     if (isInfiniteSawboneMode()) applyHunterCharacter(SAWBONE_ID);
     else if (isSoulBinderPracticeMode()) applyHunterCharacter(SOUL_BINDER_ID);
-    else if (isKiteSimulatorMode()) applyHunterCharacter("standard");
+    else if (isKiteSimulatorMode()) applyHunterCharacter(selectedHunterCharacter);
     else assignCharactersForMatch();
     resetMatch();
     matchStarted = true;
@@ -5867,6 +7947,10 @@
     return Boolean(profileUnlocks[role] && profileUnlocks[role].includes(characterId));
   }
 
+  function shouldUseCharacterUnlocks() {
+    return !developerUnlockAllCharacters;
+  }
+
   function getCharacterUnlockTask(role, characterId) {
     return getCharacterUnlockTasks(role, characterId)[0] || null;
   }
@@ -5904,8 +7988,9 @@
   }
 
   function addUnlockTaskProgress(progressKey, amount = 1) {
+    if (!shouldUseCharacterUnlocks()) return;
     const task = Object.values(CHARACTER_UNLOCK_TASKS).find((item) => item.progressKey === progressKey);
-    if (!task || isCharacterUnlocked(task.role, task.target) && !developerUnlockAllCharacters) return;
+    if (!task || isCharacterUnlocked(task.role, task.target)) return;
     const current = Math.max(0, profileTaskProgress[progressKey] || 0);
     profileTaskProgress[progressKey] = Math.min(task.goal, current + amount);
     saveProfileTaskProgress();
@@ -5925,7 +8010,7 @@
   }
 
   function isNormalHunterUnlockMatch() {
-    return selectedRole === PLAYER_ROLE.hunter && currentMode === GAME_MODE.normal;
+    return shouldUseCharacterUnlocks() && selectedRole === PLAYER_ROLE.hunter && currentMode === GAME_MODE.normal;
   }
 
   function trackHunterTierOneUnlock(now) {
@@ -5974,6 +8059,7 @@
   }
 
   function updateUnlockTaskRuntime(now, dt) {
+    if (!shouldUseCharacterUnlocks()) return;
     if (selectedRole !== PLAYER_ROLE.survivor || !matchStarted) return;
     updatePlayerKiteAndChaseEscapeTasks(now, dt);
     updateSafeRescueTasks(now);
@@ -6027,12 +8113,12 @@
 
   function updateHiddenUnlockPanel(role) {
     if (!hiddenUnlockForm) return;
-    hiddenUnlockForm.classList.toggle("is-hidden", role !== PLAYER_ROLE.hunter || hiddenHunterUnlocked);
+    hiddenUnlockForm.classList.toggle("is-hidden", !shouldUseCharacterUnlocks() || role !== PLAYER_ROLE.hunter || hiddenHunterUnlocked);
   }
 
   function submitHiddenHunterCode(event) {
     event.preventDefault();
-    if (!hiddenCodeInput || pendingRole !== PLAYER_ROLE.hunter || hiddenHunterUnlocked) return;
+    if (!shouldUseCharacterUnlocks() || !hiddenCodeInput || pendingRole !== PLAYER_ROLE.hunter || hiddenHunterUnlocked) return;
     const code = hiddenCodeInput.value.trim().toLowerCase();
     if (code === HIDDEN_HUNTER_UNLOCK_CODE) {
       unlockHiddenHunter();
@@ -6044,6 +8130,7 @@
   }
 
   function handleHiddenCharacterUnlockKey(key) {
+    if (!shouldUseCharacterUnlocks()) return;
     if (!roleOverlay || roleOverlay.classList.contains("is-hidden")) return;
     if (!characterPanel || characterPanel.classList.contains("is-hidden")) return;
     if (pendingRole !== PLAYER_ROLE.hunter || hiddenHunterUnlocked) return;
@@ -6120,6 +8207,7 @@
     survivor.selfHealUsed = false;
     survivor.bleedStacks = [];
     survivor.soulMarks = 0;
+    survivor.danceErosion = 0;
     survivor.soulReturnUntil = 0;
     survivor.shackleValue = 0;
     survivor.lastShackleAt = 0;
@@ -6156,6 +8244,9 @@
     survivor.nextMagicShowAt = 0;
     survivor.nextStitchPackAt = 0;
     survivor.nextPerfumeMistAt = 0;
+    survivor.nextTunerEchoAt = 0;
+    survivor.nextTunerCipherTuneAt = 0;
+    survivor.nextTunerSorrowCalibrationAt = 0;
     survivor.nextFencerLungeAt = 0;
     survivor.nextMedicAdrenalineAt = 0;
     survivor.nextFlywheelAt = 0;
@@ -6166,8 +8257,13 @@
     survivor.generalRideUntil = 0;
     survivor.generalRideWhips = 0;
     survivor.nextGeneralWhipAt = 0;
+    survivor.generalRage = 0;
+    survivor.mirrorTeleportReadyAt = 0;
+    survivor.mirrorBlindUntil = 0;
+    survivor.mirrorNoHeartbeatSince = 0;
     survivor.perfumeBoostUntil = 0;
     survivor.perfumeUltimateCharges = 0;
+    survivor.tunerResonance = 0;
     survivor.fencerStrideMarks = [];
     survivor.fencerLastSprintAngle = null;
     survivor.fencerNextStrideAt = 0;
@@ -6180,6 +8276,9 @@
     survivor.kiteDecision = null;
     survivor.healDecision = null;
     survivor.objectiveDecision = null;
+    survivor.aiTask = null;
+    survivor.palletMindgame = null;
+    survivor.aiHitRecoveryRescue = null;
     if (survivor.kind === "ai") {
       survivor.nextInteractAt = 0;
       survivor.wanderTarget = pickWanderTarget();
@@ -6270,6 +8369,20 @@
     return result;
   }
 
+  function pickWeighted(items, weights, fallback = null) {
+    const weightedItems = items
+      .map((item) => ({ item, weight: Math.max(0, Number(weights && weights[item]) || 0) }))
+      .filter((entry) => entry.weight > 0);
+    const total = weightedItems.reduce((sum, entry) => sum + entry.weight, 0);
+    if (total <= 0) return fallback || items[0] || null;
+    let roll = Math.random() * total;
+    for (const entry of weightedItems) {
+      roll -= entry.weight;
+      if (roll <= 0) return entry.item;
+    }
+    return weightedItems[weightedItems.length - 1].item;
+  }
+
   function handlePlayerInteraction(now) {
     if (selectedRole === PLAYER_ROLE.hunter) {
       handleHunterInteraction(now);
@@ -6327,6 +8440,15 @@
   }
 
   function handlePlayerUse(now) {
+    if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+      useDanceSpin(now);
+      return;
+    }
+    if (selectedRole === PLAYER_ROLE.hunter && isMirrorGhost()) {
+      useMirrorLight(now);
+      return;
+    }
+    if (selectedRole === PLAYER_ROLE.hunter && useGhostfire(now)) return;
     if (selectedRole === PLAYER_ROLE.hunter && isSoulBinder()) {
       borrowSoul(now);
       return;
@@ -6367,7 +8489,7 @@
     }
 
     if (player.state === "downed" && areExitsPowered()) {
-      const gate = findNearestExitGate(player, 96);
+      const gate = findNearestExitGate(player, GATE_USE_RANGE);
       if (gate && gate.opened) {
         startEscape(player, gate, now);
         return;
@@ -6400,7 +8522,7 @@
     }
 
     if (areExitsPowered()) {
-      const gate = findNearestExitGate(player, 96);
+      const gate = findNearestExitGate(player, GATE_USE_RANGE);
       if (gate) {
         if (gate.opened) startEscape(player, gate, now);
         else startOpenGate(player, gate, now);
@@ -6488,6 +8610,13 @@
       }
     });
     return nearest;
+  }
+
+  function isActorInGateUseRange(actor, gate, point = null) {
+    if (!actor || !gate) return false;
+    if (distanceBetween(actor, gate) <= GATE_USE_RANGE) return true;
+    const gatePoint = point || (gate.opened ? getAIGateEscapePoint(actor, gate) : getAIGateInteractionPoint(actor, gate));
+    return Boolean(gatePoint && distanceBetween(actor, gatePoint) <= GATE_POINT_USE_RANGE);
   }
 
   function findNearestHatch(actor, range) {
@@ -6723,7 +8852,7 @@
     actor.downedAt = null;
     actor.chair = null;
     actor.carryProgress = 0;
-    actor.boostUntil = 0;
+    actor.boostUntil = Math.max(actor.boostUntil || 0, now + TIME_REWIND_BOOST_DURATION);
     actor.invisibleUntil = now + TIME_REWIND_STEALTH_DURATION;
     actor.timeDevice = null;
     actor.path = [];
@@ -6818,10 +8947,10 @@
   function magicShowMoveSeatedSurvivor(actor, now) {
     const target = findNearestSeatedSurvivor(actor, Infinity);
     if (!target || !target.chair) return false;
+    if (isBeingRescued(target)) return false;
     const targetChair = findNearestEmptyChair(actor, Infinity);
     if (!targetChair) return false;
 
-    cancelRescuesForTarget(target);
     const oldChair = target.chair;
     const progress = target.chairProgress || 0;
     oldChair.survivor = null;
@@ -6893,6 +9022,15 @@
       traveled: 0,
       createdAt: now
     });
+    actor.action = {
+      kind: "packageRecoil",
+      start: now,
+      until: now + PACKAGE_RECOIL_DURATION,
+      lastUpdate: now,
+      faceAngle: angle,
+      moveAngle: angle + Math.PI,
+      distance: 0
+    };
     chasePulseUntil = now + 240;
   }
 
@@ -6916,14 +9054,62 @@
     }
   }
 
+  function updateGhostfireProjectiles(dt, now) {
+    for (let index = ghostfireProjectiles.length - 1; index >= 0; index -= 1) {
+      const item = ghostfireProjectiles[index];
+      const dx = item.vx * dt;
+      const dy = item.vy * dt;
+      item.x += dx;
+      item.y += dy;
+      item.traveled += Math.hypot(dx, dy);
+
+      const hitTarget = getSurvivors().find((survivor) => {
+        if (survivor.escaped || survivor.state === "seated" || survivor.state === "carried" || survivor.state === "eliminated") return false;
+        return distanceBetween(item, survivor) <= survivor.radius + GHOSTFIRE_RADIUS;
+      });
+      if (hitTarget) {
+        applyHunterHit(hitTarget, now, {
+          allowTerrorShock: false,
+          applyBoneBleed: false,
+          damage: GHOSTFIRE_DAMAGE
+        });
+        ghostfireProjectiles.splice(index, 1);
+        continue;
+      }
+
+      if (item.traveled >= GHOSTFIRE_RANGE) ghostfireProjectiles.splice(index, 1);
+    }
+  }
+
+  function updateTunerEchoLines(now) {
+    for (let index = tunerEchoLines.length - 1; index >= 0; index -= 1) {
+      const line = tunerEchoLines[index];
+      if (now >= line.until) {
+        tunerEchoLines.splice(index, 1);
+        continue;
+      }
+      if (!circleHitsSegment(hunter.x, hunter.y, hunter.radius + TUNER_ECHO_THICKNESS * 0.5, line)) continue;
+      hunter.tunerEchoSlowUntil = Math.max(hunter.tunerEchoSlowUntil || 0, now + TUNER_ECHO_SLOW_DURATION);
+      tunerEchoLines.splice(index, 1);
+      showAssistAlert("回声减速", now, 700);
+    }
+  }
+
   function packageHitsHunter(item, now) {
     if (distanceBetween(item, hunter) > hunter.radius + PACKAGE_HIT_RADIUS) return false;
-    applyPackageHit(now);
+    applyPackageHit(item, now);
     return true;
   }
 
-  function applyPackageHit(now) {
+  function applyPackageHit(item, now) {
+    const owner = item && item.owner;
     interruptHunterByStun(now, PACKAGE_STUN_DURATION);
+    if (owner && isMessenger(owner) && !owner.escaped && owner.state !== "eliminated") {
+      owner.boostUntil = Math.max(owner.boostUntil || 0, now + PACKAGE_HIT_BOOST_DURATION);
+      if (hunter.target === owner) {
+        owner.nextPackageAt = Math.max(now, (owner.nextPackageAt || now) - PACKAGE_CHASE_HIT_COOLDOWN_REFUND);
+      }
+    }
     chasePulseUntil = now + 420;
   }
 
@@ -7056,7 +9242,7 @@
   }
 
   function getTwinSkillBlockReason(now) {
-    if (!matchStarted || selectedRole !== PLAYER_ROLE.hunter || !isTwinSword()) return "未选择双生";
+    if (!matchStarted || !isTwinSword()) return "未选择双生";
     if (hunter.action) return "动作中";
     if (hunter.carrying) return "牵人中";
     if (now < hunter.stunnedUntil || now < hunter.wipeUntil) return "硬直中";
@@ -7501,6 +9687,7 @@
       duration,
       calibration: null,
       calibrationFeedback: null,
+      forcedTunerCalibrations: 0,
       nextCalibrationAt: getNextRepairCalibrationAt(now, true)
     };
     point.workers.push(actor);
@@ -7568,17 +9755,23 @@
   }
 
   function updateRepairCalibration(action, now) {
-    if (!action || action.actor !== player || selectedRole !== PLAYER_ROLE.survivor) return;
+    if (!action) return;
     if (action.calibrationFeedback && now >= action.calibrationFeedback.until) action.calibrationFeedback = null;
-    if (!action.calibration && now >= (action.nextCalibrationAt || Infinity)) {
+    if (!action.calibration && (action.forcedTunerCalibrations || 0) > 0) {
+      startRepairCalibration(action, now, true);
+    } else if (!action.calibration && now >= (action.nextCalibrationAt || Infinity)) {
       startRepairCalibration(action, now);
+    }
+    if (action.calibration && isAIControlledRepairCalibration(action.actor) && now >= (action.calibration.aiResolveAt || Infinity)) {
+      finishRepairCalibration(action, now, action.calibration.aiResult || "success");
+      return;
     }
     if (action.calibration && now >= action.calibration.until) {
       finishRepairCalibration(action, now, "fail");
     }
   }
 
-  function startRepairCalibration(action, now) {
+  function startRepairCalibration(action, now, forcedBySorrow = false) {
     const successSize = REPAIR_CALIBRATION_SUCCESS_SIZE * getRepairCalibrationRangeMultiplier(action.actor);
     const perfectSize = REPAIR_CALIBRATION_PERFECT_SIZE * getRepairCalibrationRangeMultiplier(action.actor);
     const successStart = 0.44 + Math.random() * 0.24;
@@ -7590,9 +9783,31 @@
       successStart,
       successEnd,
       perfectStart,
-      perfectEnd: perfectStart + perfectSize
+      perfectEnd: perfectStart + perfectSize,
+      forcedBySorrow
     };
+    if (isAIControlledRepairCalibration(action.actor)) setAIRepairCalibrationPlan(action.calibration);
     action.calibrationFeedback = null;
+  }
+
+  function isAIControlledRepairCalibration(actor) {
+    return actor !== player || selectedRole !== PLAYER_ROLE.survivor;
+  }
+
+  function setAIRepairCalibrationPlan(calibration) {
+    const roll = Math.random();
+    if (roll < AI_REPAIR_CALIBRATION_PERFECT_CHANCE) {
+      calibration.aiResult = "perfect";
+      calibration.aiResolveAt = calibration.start + (calibration.until - calibration.start) * ((calibration.perfectStart + calibration.perfectEnd) / 2);
+      return;
+    }
+    if (roll < AI_REPAIR_CALIBRATION_PERFECT_CHANCE + AI_REPAIR_CALIBRATION_FAIL_CHANCE) {
+      calibration.aiResult = "fail";
+      calibration.aiResolveAt = calibration.start + (calibration.until - calibration.start) * Math.max(0.08, calibration.successStart * 0.55);
+      return;
+    }
+    calibration.aiResult = "success";
+    calibration.aiResolveAt = calibration.start + (calibration.until - calibration.start) * ((calibration.successStart + calibration.successEnd) / 2);
   }
 
   function getRepairCalibrationRangeMultiplier(actor) {
@@ -7624,22 +9839,42 @@
 
   function finishRepairCalibration(action, now, result) {
     if (!action || !action.point || !action.calibration) return;
+    const forcedBySorrow = action.calibration.forcedBySorrow;
     action.calibration = null;
-    action.nextCalibrationAt = getNextRepairCalibrationAt(now);
+    if (forcedBySorrow) action.forcedTunerCalibrations = Math.max(0, (action.forcedTunerCalibrations || 0) - 1);
+    action.nextCalibrationAt = forcedBySorrow && (action.forcedTunerCalibrations || 0) > 0 ? now : getNextRepairCalibrationAt(now);
 
     if (result === "perfect") {
       const bonus = REPAIR_CALIBRATION_PERFECT_BONUS + getRepairCalibrationBonus(action.actor);
       applyRepairCalibrationDelta(action, bonus);
+      addTunerResonance(action.actor, TUNER_CALIBRATION_PERFECT_RESONANCE);
       action.calibrationFeedback = { label: `完美校准 +${Math.round(bonus * 100)}%`, color: "#d9b76a", until: now + 1200 };
     } else if (result === "success") {
       const bonus = REPAIR_CALIBRATION_SUCCESS_BONUS + getRepairCalibrationBonus(action.actor);
       applyRepairCalibrationDelta(action, bonus);
+      addTunerResonance(action.actor, TUNER_CALIBRATION_SUCCESS_RESONANCE);
       action.calibrationFeedback = { label: `校准成功 +${Math.round(bonus * 100)}%`, color: "#b7d6c1", until: now + 1200 };
     } else {
       applyRepairCalibrationDelta(action, -REPAIR_CALIBRATION_FAIL_PENALTY);
-      action.calibrationFeedback = { label: "炸机 -5%", color: "#b95f52", until: now + 1400 };
+      action.calibrationFeedback = { label: "炸机 -5% · 眩晕", color: "#b95f52", until: now + 1400 };
+      stunActorFromRepairCalibration(action, now);
       chasePulseUntil = now + 520;
     }
+  }
+
+  function stunActorFromRepairCalibration(action, now) {
+    const actor = action && action.actor;
+    if (!actor) return;
+    cancelRepair(action);
+    actor.action = {
+      kind: "repairStun",
+      start: now,
+      until: now + REPAIR_CALIBRATION_FAIL_STUN_DURATION
+    };
+    actor.vx = 0;
+    actor.vy = 0;
+    actor.nextInteractAt = now + REPAIR_CALIBRATION_FAIL_STUN_DURATION;
+    if (actor === player && selectedRole === PLAYER_ROLE.survivor) showAssistAlert("炸机眩晕", now, 900);
   }
 
   function applyRepairCalibrationDelta(action, delta) {
@@ -7651,9 +9886,11 @@
 
   function startOpenGate(actor, gate, now) {
     if (actor.action || actor.state === "downed" || actor.escaped || !areExitsPowered() || gate.opened || isOpeningGate(actor, gate)) return;
+    if (!isActorInGateUseRange(actor, gate)) return;
     actor.action = {
       kind: "openingGate",
       start: now,
+      lastUpdate: now,
       gate,
       actor,
       duration: GATE_OPEN_DURATION
@@ -7683,6 +9920,7 @@
   function startEscape(actor, gate, now) {
     if (actor.action || actor.escaped || !areExitsPowered() || !gate.opened) return;
     if (actor.state !== "healthy" && actor.state !== "injured" && actor.state !== "downed") return;
+    if (!isActorInGateUseRange(actor, gate, getAIGateEscapePoint(actor, gate))) return;
     actor.action = {
       kind: "escaping",
       start: now,
@@ -7893,6 +10131,7 @@
       hunter.action = null;
       hunter.lastAttackHit = false;
     }
+    cancelDanceStepByControl(now);
     if (hunter.action && hunter.action.kind === "pickingUp") {
       cancelPickupAction(hunter.action, now, true);
       hunter.action = null;
@@ -8058,10 +10297,11 @@
   }
 
   function cancelSurvivorAction(survivor) {
-    if (!survivor.action) return;
-    if (survivor.action.kind === "healing" || survivor.action.kind === "beingHealed") cancelHealing(survivor.action);
-    if (survivor.action.kind === "repairing") cancelRepair(survivor.action);
-    if (survivor.action.kind === "openingGate") cancelGateOpen(survivor.action);
+    const action = survivor.action;
+    if (!action) return;
+    if (action.kind === "healing" || action.kind === "beingHealed") cancelHealing(action);
+    if (action.kind === "repairing") cancelRepair(action);
+    if (action.kind === "openingGate") cancelGateOpen(action);
     survivor.action = null;
   }
 
@@ -8208,6 +10448,7 @@
 
   function dropPallet(pallet, now) {
     pallet.label = "dropped";
+    invalidateCollisionRects();
     chasePulseUntil = now + 320;
     if (distanceBetween(hunter, pallet) < 92 && now >= hunter.stunnedUntil) {
       interruptHunterByStun(now, 3000);
@@ -8227,6 +10468,7 @@
 
   function startVault(actor, obstacle, duration, now, kind) {
     if (actor.action) return;
+    if (obstacle.label === "window" && isWindowBlockedForActor(obstacle, actor, now)) return;
     const normal = getObstacleNormal(obstacle);
     const side = Math.sign((actor.x - obstacle.x) * normal.x + (actor.y - obstacle.y) * normal.y) || 1;
     const destination = findVaultDestination(actor, obstacle, normal, side);
@@ -8239,8 +10481,19 @@
       fromY: actor.y,
       toX: destination.x,
       toY: destination.y,
-      obstacleLabel: obstacle.label
+      obstacleLabel: obstacle.label,
+      obstacle
     };
+  }
+
+  function isWindowBlockedForActor(windowItem, actor, now = performance.now()) {
+    return Boolean(windowItem && windowItem.label === "window" && actor !== hunter && now < (windowItem.blockedUntil || 0));
+  }
+
+  function maybeTriggerConfinedSpace(actor, action, now) {
+    if (actor !== hunter || !hasHunterBadge("confinedSpace") || !action || action.obstacleLabel !== "window" || !action.obstacle) return;
+    action.obstacle.blockedUntil = Math.max(action.obstacle.blockedUntil || 0, now + CONFINED_SPACE_WINDOW_BLOCK_DURATION);
+    showAssistAlert("禁闭空间", now, 900);
   }
 
   function maybeTriggerKneeJerk(actor, action, now) {
@@ -8362,6 +10615,78 @@
     return true;
   }
 
+  function updatePackageRecoilAction(actor, action, now) {
+    if (!isMessenger(actor) || actor.state !== "healthy" && actor.state !== "injured" || actor.escaped) {
+      actor.action = null;
+      return true;
+    }
+
+    const dt = Math.max(0, (now - (action.lastUpdate || action.start)) / 1000);
+    action.lastUpdate = now;
+    const speed = PACKAGE_RECOIL_DISTANCE / Math.max(PACKAGE_RECOIL_DURATION / 1000, 0.001);
+    const remaining = Math.max(0, PACKAGE_RECOIL_DISTANCE - (action.distance || 0));
+    const step = Math.min(speed * dt, remaining);
+    const beforeX = actor.x;
+    const beforeY = actor.y;
+    const moved = moveActorSmart(actor, Math.cos(action.moveAngle) * step, Math.sin(action.moveAngle) * step);
+    action.distance = (action.distance || 0) + moved;
+    actor.angle = action.faceAngle;
+    actor.vx = (actor.x - beforeX) / Math.max(dt, 0.001);
+    actor.vy = (actor.y - beforeY) / Math.max(dt, 0.001);
+
+    if (now >= action.until || action.distance >= PACKAGE_RECOIL_DISTANCE - 0.5 || moved < 0.01 && step > 0.5) {
+      actor.vx = 0;
+      actor.vy = 0;
+      actor.action = null;
+    }
+    return true;
+  }
+
+  function updateGeneralRamAction(actor, action, now) {
+    if (!isGeneral(actor) || !isGeneralRiding(actor, now) || actor.state !== "healthy" && actor.state !== "injured" || actor.escaped) {
+      finishGeneralRam(actor);
+      return true;
+    }
+
+    const dt = Math.max(0, (now - (action.lastUpdate || action.start)) / 1000);
+    action.lastUpdate = now;
+    const phaseElapsed = now - action.start;
+    const isBackstep = phaseElapsed < GENERAL_RAM_WINDUP;
+    const speed = isBackstep
+      ? GENERAL_RAM_BACKSTEP_DISTANCE / Math.max(GENERAL_RAM_WINDUP / 1000, 0.001)
+      : GENERAL_RAM_DISTANCE / Math.max(GENERAL_RAM_DURATION / 1000, 0.001);
+    const maxDistance = isBackstep ? GENERAL_RAM_BACKSTEP_DISTANCE : GENERAL_RAM_DISTANCE;
+    const key = isBackstep ? "backstepDistance" : "dashDistance";
+    const direction = isBackstep ? action.angle + Math.PI : action.angle;
+    const remaining = Math.max(0, maxDistance - (action[key] || 0));
+    const step = Math.min(speed * dt, remaining);
+    const beforeX = actor.x;
+    const beforeY = actor.y;
+    const moved = moveActorSmart(actor, Math.cos(direction) * step, Math.sin(direction) * step);
+
+    action[key] = (action[key] || 0) + moved;
+    actor.angle = action.angle;
+    actor.vx = (actor.x - beforeX) / Math.max(dt, 0.001);
+    actor.vy = (actor.y - beforeY) / Math.max(dt, 0.001);
+
+    if (isBackstep && phaseElapsed + dt * 1000 >= GENERAL_RAM_WINDUP) {
+      action.phase = "dash";
+      showAssistAlert("铁骑冲刺", now, 620);
+    }
+
+    if (!isBackstep && !action.hitHunter && distanceBetween(actor, hunter) <= GENERAL_RAM_HIT_RANGE) {
+      action.hitHunter = true;
+      ramHunterFromGeneral(actor, now);
+      finishGeneralRam(actor);
+      return true;
+    }
+
+    if (now >= action.until || !isBackstep && (action.dashDistance >= GENERAL_RAM_DISTANCE - 0.5 || moved < 0.01 && step > 0.5)) {
+      finishGeneralRam(actor);
+    }
+    return true;
+  }
+
   function updateHunterAttackWindupAction(action, now) {
     hunter.status = "attacking";
     hunter.angle = action.angle;
@@ -8451,6 +10776,10 @@
       return updateSawDashAction(action, now);
     }
 
+    if (action.kind === "danceStep") {
+      return updateDanceStepAction(action, now);
+    }
+
     if (action.kind === "attackWindup") {
       if (actor !== hunter) {
         actor.action = null;
@@ -8465,6 +10794,14 @@
 
     if (action.kind === "flywheelDash") {
       return updateFlywheelAction(actor, action, now);
+    }
+
+    if (action.kind === "packageRecoil") {
+      return updatePackageRecoilAction(actor, action, now);
+    }
+
+    if (action.kind === "generalRam") {
+      return updateGeneralRamAction(actor, action, now);
     }
 
     if (action.kind === "pickingUp") {
@@ -8599,6 +10936,13 @@
       return true;
     }
 
+    if (action.kind === "repairStun") {
+      actor.vx = 0;
+      actor.vy = 0;
+      if (now >= action.until || actor.state === "downed" || actor.escaped) actor.action = null;
+      return true;
+    }
+
     if (action.kind === "openingGate") {
       actor.vx = 0;
       actor.vy = 0;
@@ -8609,11 +10953,15 @@
         actor.objectiveDecision = null;
         return true;
       }
-      if (!areExitsPowered() || action.gate.opened || actor.state === "downed" || actor.escaped || distanceBetween(actor, action.gate) > 120) {
+      if (!areExitsPowered() || action.gate.opened || actor.state === "downed" || actor.escaped || !isActorInGateUseRange(actor, action.gate)) {
         cancelGateOpen(action);
         actor.action = null;
         return true;
       }
+      const elapsed = Math.max(0, now - (action.lastUpdate || action.start || now));
+      action.lastUpdate = now;
+      action.gate.progress = Math.min(1, action.gate.progress + (elapsed / action.duration) * getSurvivorInteractionSpeedMultiplier(actor));
+      if (action.gate.progress >= 1) finishOpenGate(action.gate);
       return true;
     }
 
@@ -8627,7 +10975,7 @@
         !escapeTarget ||
         actor.escaped ||
         (isHatchEscape ? !isHatchOpen() : !areExitsPowered()) ||
-        distanceBetween(actor, escapeTarget) > 120
+        (isHatchEscape ? distanceBetween(actor, escapeTarget) > 120 : !isActorInGateUseRange(actor, escapeTarget, getAIGateEscapePoint(actor, escapeTarget)))
       ) {
         actor.action = null;
         return true;
@@ -8640,6 +10988,7 @@
       hunter.status = "breaking";
       if (now >= action.until) {
         action.pallet.label = "broken";
+        invalidateCollisionRects();
         actor.action = null;
       }
       return true;
@@ -8657,6 +11006,7 @@
     if (actor === hunter) hunter.status = "vaulting";
     if (now >= action.until) {
       maybeTriggerKneeJerk(actor, action, now);
+      maybeTriggerConfinedSpace(actor, action, now);
       actor.action = null;
     }
     return true;
@@ -8680,6 +11030,7 @@
     let nearest = null;
     let nearestDistance = Infinity;
     windows.forEach((item) => {
+      if (isWindowBlockedForActor(item, actor)) return;
       const distance = distanceToProp(actor, item);
       if (distance < range && distance < nearestDistance) {
         nearest = item;
@@ -8763,15 +11114,23 @@
     drawStitchPackDrops();
     drawTimeDevices();
     drawActorDecoys();
+    drawMirrorRifts();
+    drawMirrorCurtains();
+    drawDancePoints();
+    drawDanceLines();
+    drawTunerEchoLines();
     drawRects(walls, "#141b16", "#293529");
     drawWindows();
     drawPallets();
     drawPackageAim();
+    drawMirrorCurtainAim();
+    drawDancePointAim();
     drawTwinAim();
     drawBlinkAim();
     drawShiftAim();
     drawTwinSwordProjectiles();
     drawPackageProjectiles();
+    drawGhostfireProjectiles();
     drawPerfumerSenseAuras();
     drawAssistListenDirectionArrows();
     drawWantedDirectionArrow();
@@ -8783,6 +11142,7 @@
 
     ctx.restore();
     drawPerfumeVisionOverlay();
+    drawMirrorBlindOverlay();
     drawHunterTinnitusIndicator();
     drawMatchResult();
     drawLanternAlert();
@@ -8887,6 +11247,198 @@
     });
   }
 
+  function drawMirrorRifts() {
+    const now = performance.now();
+    mirrorRifts.forEach((rift) => {
+      const age = now - rift.createdAt;
+      const pulse = 1 + Math.sin(age / 180) * 0.08;
+      ctx.save();
+      ctx.translate(rift.x, rift.y);
+      ctx.scale(pulse, pulse);
+
+      const gradient = ctx.createRadialGradient(0, 0, 4, 0, 0, MIRROR_RIFT_RADIUS);
+      gradient.addColorStop(0, "rgba(101, 201, 255, 0.34)");
+      gradient.addColorStop(0.56, "rgba(38, 123, 255, 0.18)");
+      gradient.addColorStop(1, "rgba(38, 123, 255, 0)");
+      ctx.fillStyle = gradient;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, MIRROR_RIFT_RADIUS, MIRROR_RIFT_RADIUS * 0.42, -0.18, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.strokeStyle = "rgba(101, 201, 255, 0.86)";
+      ctx.lineWidth = 4;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(-44, -5);
+      ctx.lineTo(-24, 4);
+      ctx.lineTo(-8, -3);
+      ctx.lineTo(10, 5);
+      ctx.lineTo(30, -4);
+      ctx.lineTo(46, 2);
+      ctx.stroke();
+
+      ctx.strokeStyle = "rgba(227, 249, 255, 0.72)";
+      ctx.lineWidth = 1.8;
+      ctx.beginPath();
+      ctx.moveTo(-18, -13);
+      ctx.lineTo(-7, -4);
+      ctx.moveTo(18, 13);
+      ctx.lineTo(30, 3);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  function drawMirrorCurtains() {
+    const now = performance.now();
+    mirrorCurtains.forEach((curtain) => {
+      const alpha = Math.min(1, Math.max(0.18, ((curtain.until || now) - now) / MIRROR_CURTAIN_DURATION));
+      drawMirrorCurtainSegment(curtain.x1, curtain.y1, curtain.x2, curtain.y2, alpha);
+    });
+  }
+
+  function drawDanceLines() {
+    const now = performance.now();
+    danceLines.forEach((line) => {
+      const duration = DANCE_LINE_DURATION;
+      const life = Math.max(0.16, Math.min(1, (line.until - now) / duration));
+      ctx.save();
+      ctx.globalAlpha *= life;
+      ctx.lineCap = "round";
+      ctx.shadowColor = "rgba(246, 116, 209, 0.78)";
+      ctx.shadowBlur = 16;
+      ctx.strokeStyle = "rgba(114, 45, 126, 0.42)";
+      ctx.lineWidth = DANCE_LINE_THICKNESS + 14;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.strokeStyle = "rgba(255, 182, 232, 0.94)";
+      ctx.lineWidth = DANCE_LINE_THICKNESS;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  function drawTunerEchoLines() {
+    const now = performance.now();
+    tunerEchoLines.forEach((line) => {
+      const life = Math.max(0.16, Math.min(1, (line.until - now) / TUNER_ECHO_DURATION));
+      ctx.save();
+      ctx.globalAlpha *= life;
+      ctx.lineCap = "round";
+      ctx.shadowColor = "rgba(174, 116, 232, 0.86)";
+      ctx.shadowBlur = 14;
+      ctx.strokeStyle = "rgba(104, 68, 155, 0.4)";
+      ctx.lineWidth = TUNER_ECHO_THICKNESS + 14;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.setLineDash([10, 8]);
+      ctx.strokeStyle = "rgba(236, 211, 255, 0.96)";
+      ctx.lineWidth = TUNER_ECHO_THICKNESS;
+      ctx.beginPath();
+      ctx.moveTo(line.x1, line.y1);
+      ctx.lineTo(line.x2, line.y2);
+      ctx.stroke();
+      ctx.restore();
+    });
+  }
+
+  function drawDancePoint(point, now) {
+    if (!point) return;
+    const life = Math.max(0, Math.min(1, (point.until - now) / DANCE_POINT_DURATION));
+    const pulse = 1 + Math.sin(now / 130) * 0.1;
+    ctx.save();
+    ctx.translate(point.x, point.y);
+    ctx.scale(pulse, pulse);
+    ctx.globalAlpha *= Math.max(0.3, life);
+    ctx.fillStyle = "rgba(104, 37, 123, 0.42)";
+    ctx.strokeStyle = "rgba(255, 188, 232, 0.94)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.fillStyle = "rgba(255, 234, 249, 0.94)";
+    ctx.beginPath();
+    ctx.arc(0, 0, 6, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  function drawDancePoints() {
+    if (!pendingDancePoint && !pendingDanceLine) return;
+    const now = performance.now();
+    drawDancePoint(pendingDancePoint, now);
+    if (pendingDanceLine) {
+      drawDancePoint(pendingDanceLine.firstPoint, now);
+      drawDancePoint(pendingDanceLine.secondPoint, now);
+    }
+  }
+
+  function drawDancePointAim() {
+    if (!dancePointAim || !isDancer()) return;
+    const point = getDancePointPlacementFromTarget(dancePointAim.targetX, dancePointAim.targetY);
+    ctx.save();
+    ctx.setLineDash([10, 7]);
+    ctx.strokeStyle = "rgba(255, 184, 229, 0.8)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(hunter.x, hunter.y);
+    ctx.lineTo(point.x, point.y);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "rgba(121, 43, 137, 0.28)";
+    ctx.strokeStyle = "rgba(255, 198, 235, 0.96)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(point.x, point.y, 20, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawMirrorCurtainAim() {
+    if (!mirrorCurtainAim || !mirrorCurtainAim.start || !mirrorCurtainAim.current) return;
+    drawMirrorCurtainSegment(mirrorCurtainAim.start.x, mirrorCurtainAim.start.y, mirrorCurtainAim.current.x, mirrorCurtainAim.current.y, 0.62);
+  }
+
+  function drawMirrorCurtainSegment(x1, y1, x2, y2, alpha = 1) {
+    ctx.save();
+    ctx.globalAlpha *= alpha;
+    ctx.lineCap = "round";
+    ctx.shadowColor = "rgba(101, 201, 255, 0.65)";
+    ctx.shadowBlur = 18;
+    ctx.strokeStyle = "rgba(52, 132, 255, 0.34)";
+    ctx.lineWidth = MIRROR_CURTAIN_THICKNESS + 14;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = "rgba(101, 201, 255, 0.92)";
+    ctx.lineWidth = MIRROR_CURTAIN_THICKNESS;
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(232, 250, 255, 0.78)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([18, 12]);
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
   function drawPerfumerSenseAuras() {
     if (isInfiniteSawboneMode()) return;
     const now = performance.now();
@@ -8959,6 +11511,22 @@
     ctx.save();
     ctx.fillStyle = "rgba(250, 253, 255, 0.82)";
     ctx.fillRect(0, 0, width, height);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+    ctx.restore();
+  }
+
+  function drawMirrorBlindOverlay() {
+    if (selectedRole !== PLAYER_ROLE.survivor || !(performance.now() < (player.mirrorBlindUntil || 0))) return;
+    const remaining = Math.max(0, (player.mirrorBlindUntil || 0) - performance.now());
+    const alpha = Math.min(0.82, remaining / MIRROR_LIGHT_BLIND_DURATION);
+    ctx.save();
+    ctx.fillStyle = `rgba(227, 249, 255, ${0.56 * alpha})`;
+    ctx.fillRect(0, 0, width, height);
+    const gradient = ctx.createRadialGradient(width / 2, height / 2, Math.min(width, height) * 0.08, width / 2, height / 2, Math.max(width, height) * 0.56);
+    gradient.addColorStop(0, "rgba(255, 255, 255, 0)");
+    gradient.addColorStop(0.45, `rgba(101, 201, 255, ${0.16 * alpha})`);
+    gradient.addColorStop(1, `rgba(3, 12, 25, ${0.55 * alpha})`);
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
     ctx.restore();
@@ -9441,6 +12009,24 @@
     });
   }
 
+  function drawGhostfireProjectiles() {
+    ghostfireProjectiles.forEach((item) => {
+      ctx.save();
+      ctx.translate(item.x, item.y);
+      ctx.fillStyle = "rgba(104, 222, 196, 0.82)";
+      ctx.shadowColor = "#80ffe1";
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(0, 0, GHOSTFIRE_RADIUS, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#e6fff6";
+      ctx.beginPath();
+      ctx.arc(0, 0, GHOSTFIRE_RADIUS * 0.42, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    });
+  }
+
   function drawTwinShadowZones() {
     if (twinShadowZones.length === 0) return;
     const now = performance.now();
@@ -9772,10 +12358,16 @@
   }
 
   function drawWindows() {
+    const now = performance.now();
     windows.forEach((item) => {
       ctx.save();
       ctx.translate(item.x, item.y);
       drawWindowOpening(item);
+      if (now < (item.blockedUntil || 0)) {
+        const boardWidth = item.w > item.h ? item.w + 14 : item.w + 10;
+        const boardHeight = item.w > item.h ? item.h + 12 : item.h + 14;
+        drawWoodBoard(boardWidth, boardHeight);
+      }
       ctx.restore();
     });
   }
@@ -9806,6 +12398,7 @@
       }
       return actor.characterId;
     }
+    if (isGeneral(actor) && isGeneralRiding(actor)) return "generalRide";
     return actor.characterId || actor.owner && actor.owner.characterId;
   }
 
@@ -9926,7 +12519,7 @@
     const moving = speed > 18 && canUseWalkCycle(actor, type);
     const phase = moving ? Math.sin(now / 90 + (actor.x + actor.y) * 0.018) : Math.sin(now / 520 + (actor.x || 0) * 0.01) * 0.16;
     const attackLift = type === "hunter" ? getHunterAttackWindupLift(actor, now) : 0;
-    const targetHeight = (type === "hunter" ? 76 : 66) * scale;
+    const targetHeight = (type === "hunter" ? 76 : isGeneralRiding(actor, now) ? 86 : 66) * scale;
     const drawHeight = actor.state === "downed" ? targetHeight * 0.82 : targetHeight;
     const drawWidth = drawHeight * sprite.width / sprite.height;
     const bob = actor.state === "downed" ? 0 : moving ? Math.abs(phase) * -2 : phase * 0.9;
@@ -10371,7 +12964,7 @@
 
     if (hasMedicShield(survivor, now)) drawMedicShield(survivor, now);
 
-    if (showName || survivor.state !== "healthy" || getDamageProgressPercent(survivor) > 0 || (survivor.shackleValue || 0) > 0 || now < (survivor.shackledUntil || 0) || getSoulMarks(survivor) > 0 || getBoneBleedStacks(survivor) > 0 || survivor.stitchPack || hasMedicShield(survivor, now) || isGeneralRiding(survivor, now) || now < (survivor.kneeJerkBoostUntil || 0) || now < (survivor.medicAdrenalineUntil || 0) || (survivor.medicAdrenalinePendingDamage || 0) > 0 || (survivor.medicRescueShockPendingDamage || 0) > 0 || isSurvivorInvisible(survivor, now) || survivor.action && survivor.action.kind === "dismantlingLamp" || now < survivor.boostUntil) {
+    if (showName || survivor.state !== "healthy" || getDamageProgressPercent(survivor) > 0 || (survivor.shackleValue || 0) > 0 || now < (survivor.shackledUntil || 0) || getSoulMarks(survivor) > 0 || getBoneBleedStacks(survivor) > 0 || survivor.stitchPack || hasMedicShield(survivor, now) || isGeneralRiding(survivor, now) || now < (survivor.kneeJerkBoostUntil || 0) || now < (survivor.medicAdrenalineUntil || 0) || now < (survivor.mirrorBlindUntil || 0) || (survivor.medicAdrenalinePendingDamage || 0) > 0 || (survivor.medicRescueShockPendingDamage || 0) > 0 || isSurvivorInvisible(survivor, now) || survivor.action && survivor.action.kind === "dismantlingLamp" || now < survivor.boostUntil) {
       drawSurvivorLabel(survivor);
     }
   }
@@ -10450,6 +13043,7 @@
     } else if (survivor.stitchPack) label = `${displayName} 针线 ${getStitchSecondsLeft(survivor)}秒`;
     else if (performance.now() < (survivor.listenRevealUntil || 0)) label = `${displayName} 聆听`;
     else if (performance.now() < (survivor.assistRevealUntil || 0)) label = `${displayName} 爆点`;
+    else if (performance.now() < (survivor.mirrorBlindUntil || 0)) label = `${displayName} 致盲`;
     else if (performance.now() < (survivor.patrollerHoldUntil || 0)) label = `${displayName} 被咬`;
     else if (isSurvivorInvisible(survivor)) label = `${displayName} 隐身`;
     else if (performance.now() < (survivor.shackledUntil || 0)) label = `${displayName} 枷锁`;
@@ -10489,7 +13083,7 @@
       return;
     }
 
-    const downedExit = areExitsPowered() ? findNearestExitGate(player, 96) : null;
+    const downedExit = areExitsPowered() ? findNearestExitGate(player, GATE_USE_RANGE) : null;
     if (player.state === "downed" && downedExit && downedExit.opened) {
       drawFloatingPrompt(player.x, player.y + 42, "E 逃出");
       return;
@@ -10501,7 +13095,7 @@
     const healTarget = findNearestHealableTeammate(player, 92);
     const canDropStitchPack = isApprentice(player) && canPlaceStitchPack(player);
     const soulLamp = findNearestSoulLamp(player, SOUL_LAMP_DISMANTLE_RANGE);
-    const nearExit = areExitsPowered() ? findNearestExitGate(player, 96) : null;
+    const nearExit = areExitsPowered() ? findNearestExitGate(player, GATE_USE_RANGE) : null;
     const repairPoint = findNearestRepairPoint(player, 110);
     const standingPallet = findNearestPallet(player, "standing", SURVIVOR_PALLET_PROMPT_RANGE);
     const droppedPallet = findNearestPallet(player, "dropped", SURVIVOR_PALLET_PROMPT_RANGE);
@@ -10918,8 +13512,8 @@
     miniCtx.scale(scale, scale);
     miniCtx.fillStyle = "#101611";
     walls.forEach((wall) => miniCtx.fillRect(wall.x, wall.y, wall.w, wall.h));
-    miniCtx.fillStyle = "#b7d6c1";
     windows.forEach((item) => {
+      miniCtx.fillStyle = performance.now() < (item.blockedUntil || 0) ? "#8b5a36" : "#b7d6c1";
       if (item.w > item.h) {
         miniCtx.fillRect(item.x - 24, item.y - 3, 48, 6);
       } else {
@@ -11101,7 +13695,9 @@
     else if ((survivor.shackleValue || 0) > 0) effects.push(`枷锁${Math.round(survivor.shackleValue)}`);
     if (getDamageProgressPercent(survivor) > 0) effects.push(getDamageProgressLabel(survivor));
     if (getSoulMarks(survivor) > 0) effects.push(`魂印${getSoulMarks(survivor)}`);
+    if (getDanceErosionStacks(survivor) > 0) effects.push(`侵蚀${getDanceErosionStacks(survivor)}`);
     if (now < (survivor.soulReturnUntil || 0)) effects.push("归途");
+    if (now < (survivor.mirrorBlindUntil || 0)) effects.push("致盲");
     if (getBoneBleedStacks(survivor, now) > 0) effects.push(`流血x${getBoneBleedStacks(survivor, now)}`);
     if (now < (survivor.patrollerHoldUntil || 0)) effects.push("被咬");
     else if (now < (survivor.patrollerSlowUntil || 0)) effects.push("减速");
@@ -11116,7 +13712,10 @@
     }
     if (survivor.action && survivor.action.kind === "flywheelDash") effects.unshift("飞轮");
     if (now < (survivor.kneeJerkBoostUntil || 0)) effects.unshift("膝跳");
-    if (isGeneralRiding(survivor, now)) effects.unshift((survivor.generalRideWhips || 0) > 0 ? `骑马+${(survivor.generalRideWhips || 0) * 5}%` : "骑马");
+    if (isGeneralRiding(survivor, now)) {
+      const rage = Math.floor(survivor.generalRage || 0);
+      effects.unshift(isGeneralRamReady(survivor) ? "骑马·满怒" : (survivor.generalRideWhips || 0) > 0 ? `骑马+${(survivor.generalRideWhips || 0) * 5}% 怒${rage}` : `骑马 怒${rage}`);
+    }
     if (selectedRole !== PLAYER_ROLE.hunter && survivor.action && survivor.action.kind === "selfHealing") effects.push(`自愈${Math.round((survivor.healProgress || 0) * 100)}%`);
     if (survivor.stitchPack) effects.push(`针线${getStitchSecondsLeft(survivor)}s`);
     if (isKiteSimulatorMode() && survivor !== player && survivor.action && survivor.action.kind === "repairing") {
@@ -11159,7 +13758,7 @@
     const items = getCooldownItems(performance.now());
     cooldownPanel.innerHTML = items.map((item) => {
       return `
-        <div class="cooldown-chip${item.ready ? " is-ready" : " is-cooling"}">
+        <div class="cooldown-chip${item.ready ? " is-ready" : " is-cooling"}${item.tone ? ` is-${escapeHtml(item.tone)}` : ""}">
           <span>${escapeHtml(item.key)} · ${escapeHtml(item.name)}</span>
           <strong>${escapeHtml(item.value)}</strong>
         </div>
@@ -11174,6 +13773,15 @@
       const attackCooldown = Math.max(0, hunter.wipeUntil - now, hunter.lastAttackAt + hunter.attackCooldown * 1000 - now);
       items.push({ key: "J", name: "普攻", value: formatCooldown(attackCooldown), ready: attackCooldown <= 0 });
       if (hunterHasSkill()) items.push(getHunterMainSkillCooldown(now));
+      if (isLanternKeeper()) {
+        const ghostfireCooldown = getGhostfireCooldownLeft(now);
+        items.push({
+          key: "E",
+          name: "鬼火吞噬",
+          value: soulLamps.length === 0 ? "无灯" : formatCooldown(ghostfireCooldown),
+          ready: canUseGhostfire(now)
+        });
+      }
       if (isLanternKeeper() && hunter.presenceTier >= 1) {
         const cooldown = getShadowTeleportCooldownLeft(now);
         items.push({ key: "F", name: "灯影", value: formatCooldown(cooldown), ready: cooldown <= 0 && soulLamps.length > 0 });
@@ -11192,6 +13800,20 @@
         const returnCooldown = Math.max(0, (hunter.nextSoulReturnAt || 0) - now);
         items.push({ key: "E", name: "借魂", value: hunter.presenceTier >= 1 ? getTotalSoulMarks() > 0 ? `${getTotalSoulMarks()}层` : borrowCooldown > 0 ? formatCooldown(borrowCooldown) : "无魂" : "一阶", ready: canBorrowSoul(now) });
         items.push({ key: "F", name: "归途", value: hunter.presenceTier >= 2 ? formatCooldown(returnCooldown) : "二阶", ready: canStartSoulReturnSelection(now) });
+      }
+      if (isMirrorGhost()) {
+        const lightCooldown = Math.max(0, (hunter.nextMirrorLightAt || 0) - now);
+        items.push({ key: "E", name: "镜光", value: hunter.presenceTier >= 1 ? mirrorRifts.length > 0 ? formatCooldown(lightCooldown) : "无裂缝" : "一阶", ready: canUseMirrorLight(now) });
+        if (hunter.presenceTier >= 2) items.push({ key: "被动", name: "华镜", value: getMirrorCurtainReadout(now), ready: mirrorCurtains.length > 0 });
+      }
+      if (isDancer()) {
+        const spinCooldown = Math.max(0, (hunter.nextDanceSpinAt || 0) - now);
+        items.push({ key: "E", name: "旋步", value: hunter.presenceTier >= 1 ? danceLines.length > 0 ? formatCooldown(spinCooldown) : "无舞线" : "一阶", ready: canUseDanceSpin(now) });
+        if (hunter.presenceTier >= 2) {
+          const infiniteCooldown = Math.max(0, (hunter.nextInfiniteDanceAt || 0) - now);
+          const active = isInfiniteDanceActive(now);
+          items.push({ key: "F", name: "无穷舞", value: active ? `${Math.ceil((hunter.infiniteDanceUntil - now) / 1000)}s` : formatCooldown(infiniteCooldown), ready: active || canUseInfiniteDance(now) });
+        }
       }
       if (hasHunterAssist()) {
         const assistCooldown = getHunterAssistCooldownLeft(now);
@@ -11217,6 +13839,16 @@
   }
 
   function getHunterMainSkillCooldown(now) {
+    if (isDancer()) {
+      const cooldown = getDanceStepCooldownLeft(now);
+      const active = hunter.action && hunter.action.kind === "danceStep";
+      const connecting = pendingDanceLine ? Math.max(0, pendingDanceLine.connectAt - now) : 0;
+      return { key: "Q", name: "舞点", value: dancePointAim ? "拖拽中" : active ? "起势中" : pendingDanceLine ? `连线中 ${connecting > 0 ? `${(connecting / 1000).toFixed(1)}s` : ""}` : pendingDancePoint ? cooldown > 0 ? `舞点1/2 · ${formatCooldown(cooldown)}` : "舞点1/2" : formatCooldown(cooldown), ready: Boolean(dancePointAim || active || canStartDanceStep(now)) };
+    }
+    if (isMirrorGhost()) {
+      const cooldown = getMirrorCurtainCooldownLeft(now);
+      return { key: "Q", name: "镜幕", value: mirrorCurtainAim ? "划线中" : formatCooldown(cooldown), ready: mirrorCurtainAim || canStartMirrorCurtainAim(now) };
+    }
     if (isSawbone()) {
       const cooldown = getSawDashCooldownLeft(now);
       return { key: "Q", name: canUseShortSaw(now) ? "短锯" : "拉锯", value: formatCooldown(cooldown), ready: canStartSawDash(now) };
@@ -11255,13 +13887,25 @@
     }
     if (isGeneral(player)) {
       const riding = isGeneralRiding(player, now);
+      const ramReady = riding && isGeneralRamReady(player);
       const cooldown = riding ? getGeneralWhipCooldownLeft(player, now) : getGeneralRideCooldownLeft(player, now);
-      const value = riding ? `${getGeneralRideSecondsLeft(player, now)}s · +${(player.generalRideWhips || 0) * 5}%` : formatCooldown(cooldown);
-      return { key: "Q", name: riding ? "鞭策" : "骑马", value, ready: cooldown <= 0 };
+      const rage = Math.floor(player.generalRage || 0);
+      const value = riding ? ramReady ? "怒气满" : `${getGeneralRideSecondsLeft(player, now)}s · 怒${rage}/${GENERAL_RAGE_MAX}` : formatCooldown(cooldown);
+      return { key: "Q", name: ramReady ? "冲撞" : riding ? "鞭策" : "骑马", value, ready: ramReady || cooldown <= 0, tone: ramReady ? "danger" : "" };
     }
     if (isPerfumer(player)) {
       const cooldown = getPerfumeCooldownLeft(player, now);
       return { key: "Q", name: hasPerfumeUltimate(player) ? "幻香大阵" : "迷香", value: cooldown > 0 ? formatCooldown(cooldown) : hasPerfumeUltimate(player) ? "香炉" : `${player.perfumeUltimateCharges || 0}/${PERFUME_ULTIMATE_CHARGES}`, ready: cooldown <= 0 };
+    }
+    if (isTuner(player)) {
+      if (player.action && player.action.kind === "repairing") {
+        const resonance = Math.floor(getTunerResonance(player));
+        const cooldown = getTunerCipherTuneCooldownLeft(player, now);
+        return { key: "Q", name: "谐振校正", value: cooldown > 0 ? formatCooldown(cooldown) : `共振${resonance}/20`, ready: canUseTunerCipherTune(player, now) };
+      }
+      const cooldown = getTunerEchoCooldownLeft(player, now);
+      const resonance = Math.floor(getTunerResonance(player));
+      return { key: "Q", name: "回声带", value: cooldown > 0 ? formatCooldown(cooldown) : resonance >= TUNER_ECHO_COST ? `共振${resonance}` : `共振${resonance}/${TUNER_ECHO_COST}`, ready: canUseTunerEcho(player, now) };
     }
     if (isFencer(player)) {
       const cooldown = getFencerLungeCooldownLeft(player, now);
@@ -11273,7 +13917,7 @@
 
   function getControlsLabel() {
     if (selectedRole === PLAYER_ROLE.hunter) {
-      return `${isTwinSword() ? "J/Q/E/R/F/T/G" : isSoulBinder() ? "J/Q/E/F/Space" : isLanternKeeper() ? "J/Q/F/Space" : isSawbone() ? "J/Q/Space" : "J/Space"}${hasHunterAssist() ? "/L" : ""}${hasHunterBadge("trumpCard") ? "/M" : ""}`;
+      return `${isTwinSword() ? "J/Q/E/R/F/T/G" : isSoulBinder() ? "J/Q/E/F/Space" : isDancer() ? "J/Q/E/F/Space" : isMirrorGhost() ? "J/Q/E/Space" : isLanternKeeper() ? "J/Q/E/F/Space" : isSawbone() ? "J/Q/Space" : "J/Space"}${hasHunterAssist() ? "/L" : ""}${hasHunterBadge("trumpCard") ? "/M" : ""}`;
     }
     const flywheelLabel = hasSurvivorBadge(player, "flywheel") ? "/L" : "";
     return `${isActor(player) ? "E/Q/F/Space" : hasSurvivorSkill(player) ? "E/Q/Space" : "E/Space"}${flywheelLabel}`;
@@ -11295,13 +13939,15 @@
   }
 
   function updateTouchActions() {
-    if (!touchUseButton || !touchInteractButton || !touchAttackButton || !touchSkillButton || !touchShadowButton) return;
+    if (!touchUseButton || !touchInteractButton || !touchAttackButton || !touchSkillButton || !touchShadowButton || !touchGhostfireButton) return;
     const isHunter = selectedRole === PLAYER_ROLE.hunter;
     const isSurvivor = selectedRole === PLAYER_ROLE.survivor;
-    touchUseButton.classList.toggle("is-hidden", !(isSurvivor || isHunter && (isTwinSword() || hasHunterAssist())));
+    touchUseButton.classList.toggle("is-hidden", !(isSurvivor || isHunter && (isTwinSword() || hasHunterAssist() || isMirrorGhost() || isDancer())));
     touchAttackButton.classList.toggle("is-hidden", !isHunter);
     touchSkillButton.classList.toggle("is-hidden", !(isHunter && hunterHasSkill() || isSurvivor && hasSurvivorSkill(player)));
-    touchShadowButton.classList.toggle("is-hidden", !(isHunter && (isLanternKeeper() && hunter.presenceTier >= 1 || isTwinSword()) || isSurvivor && (isActor(player) || hasSurvivorBadge(player, "flywheel"))));
+    touchSkillButton.classList.toggle("is-danger", isSurvivor && isGeneral(player) && isGeneralRiding(player) && isGeneralRamReady(player));
+    touchShadowButton.classList.toggle("is-hidden", !(isHunter && (isLanternKeeper() && hunter.presenceTier >= 1 || isTwinSword() || isDancer() && hunter.presenceTier >= 2) || isSurvivor && (isActor(player) || hasSurvivorBadge(player, "flywheel"))));
+    touchGhostfireButton.classList.toggle("is-hidden", !(isHunter && isLanternKeeper()));
     touchInteractButton.classList.toggle("is-hidden", !selectedRole);
 
     if (isSurvivor) {
@@ -11312,20 +13958,28 @@
     } else if (isHunter) {
       const sawLockout = isSawbone() ? getSawAttackLockoutLeft(performance.now()) : 0;
       touchAttackButton.textContent = sawLockout > 0 ? `锁刀${Math.ceil(sawLockout / 1000)}s` : "攻击";
-      touchUseButton.textContent = isTwinSword() ? getTwinPrimaryLabel() : getHunterAssistButtonLabel();
+      touchUseButton.textContent = isTwinSword() ? getTwinPrimaryLabel() : isMirrorGhost() ? getMirrorLightButtonLabel() : isDancer() ? "旋步" : getHunterAssistButtonLabel();
       touchSkillButton.textContent = getHunterSkillButtonLabel();
       touchShadowButton.textContent = getHunterShadowButtonLabel();
+      touchGhostfireButton.textContent = getGhostfireButtonLabel();
       touchInteractButton.textContent = isTwinSword() ? getTwinSecondaryLabel() : "交互";
     } else {
       touchUseButton.textContent = "使用";
       touchAttackButton.textContent = "攻击";
       touchSkillButton.textContent = "技能";
       touchShadowButton.textContent = "灯影";
+      touchGhostfireButton.textContent = "鬼火吞噬";
       touchInteractButton.textContent = "交互";
     }
   }
 
   function getHunterSkillButtonLabel() {
+    if (isMirrorGhost()) {
+      if (mirrorCurtainAim) return mirrorCurtainAim.start ? "松手成幕" : "划线";
+      const cooldownLeft = getMirrorCurtainCooldownLeft(performance.now());
+      if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
+      return "镜幕";
+    }
     if (isTwinSword()) {
       const cooldownLeft = Math.max(0, (hunter.nextTwinFormAt || 0) - performance.now());
       if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
@@ -11363,6 +14017,28 @@
     return "寄魂灯";
   }
 
+  function getMirrorLightButtonLabel() {
+    const now = performance.now();
+    if (!isMirrorGhost()) return "使用";
+    if (hunter.presenceTier < 1) return "一阶";
+    const cooldownLeft = Math.max(0, (hunter.nextMirrorLightAt || 0) - now);
+    if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
+    if (mirrorRifts.length === 0) return "无裂缝";
+    return "镜光";
+  }
+
+  function getGhostfireButtonLabel() {
+    if (soulLamps.length === 0) return "无灯";
+    const cooldownLeft = getGhostfireCooldownLeft(performance.now());
+    return cooldownLeft > 0 ? `${Math.ceil(cooldownLeft / 1000)}s` : "鬼火吞噬";
+  }
+
+  function getMirrorCurtainReadout(now = performance.now()) {
+    if (mirrorCurtains.length === 0) return "无镜幕";
+    const remaining = mirrorCurtains.reduce((max, curtain) => Math.max(max, (curtain.until || now) - now), 0);
+    return `镜幕${Math.max(0, Math.ceil(remaining / 1000))}s`;
+  }
+
   function getHunterAssistButtonLabel() {
     const now = performance.now();
     if (!hasHunterAssist()) return "使用";
@@ -11376,6 +14052,13 @@
 
   function getHunterShadowButtonLabel() {
     if (isTwinSword()) return `飞剑${hunter.twinFlyingSwords || 0}`;
+    if (isDancer()) {
+      const now = performance.now();
+      if (hunter.presenceTier < 2) return "二阶";
+      if (isInfiniteDanceActive(now)) return `${Math.ceil((hunter.infiniteDanceUntil - now) / 1000)}s`;
+      const cooldown = Math.max(0, (hunter.nextInfiniteDanceAt || 0) - now);
+      return cooldown > 0 ? `${Math.ceil(cooldown / 1000)}s` : "无穷舞";
+    }
     if (isSoulBinder()) {
       const now = performance.now();
       if (hunter.presenceTier < 2) return "二阶";
@@ -11430,8 +14113,9 @@
     if (isGeneral(player)) {
       const now = performance.now();
       if (isGeneralRiding(player, now)) {
+        if (isGeneralRamReady(player)) return "冲撞";
         const whipCooldown = getGeneralWhipCooldownLeft(player, now);
-        return whipCooldown > 0 ? `${Math.ceil(whipCooldown / 1000)}s` : "鞭策";
+        return whipCooldown > 0 ? `${Math.ceil(whipCooldown / 1000)}s` : `怒${Math.floor(player.generalRage || 0)}/${GENERAL_RAGE_MAX}`;
       }
       const cooldownLeft = getGeneralRideCooldownLeft(player, now);
       if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
@@ -11442,6 +14126,16 @@
       const cooldownLeft = getPerfumeCooldownLeft(player, performance.now());
       if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
       return hasPerfumeUltimate(player) ? "香炉" : "迷香";
+    }
+    if (isTuner(player)) {
+      if (player.action && player.action.kind === "repairing") {
+        const cooldownLeft = getTunerCipherTuneCooldownLeft(player, performance.now());
+        if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
+        return getTunerResonance(player) >= 20 ? "谐振校正" : `共振${Math.floor(getTunerResonance(player))}/20`;
+      }
+      const cooldownLeft = getTunerEchoCooldownLeft(player, performance.now());
+      if (cooldownLeft > 0) return `${Math.ceil(cooldownLeft / 1000)}s`;
+      return getTunerResonance(player) >= TUNER_ECHO_COST ? "回声带" : `共振${Math.floor(getTunerResonance(player))}`;
     }
     if (isFencer(player)) {
       if (player.fencerLungePreparing) return "松手";
@@ -11469,7 +14163,7 @@
     if (findNearestSoulLamp(player, SOUL_LAMP_DISMANTLE_RANGE)) return "拆灯";
     if (findNearestSeatedTeammate(player, 96)) return "救人";
     if (areExitsPowered()) {
-      const gate = findNearestExitGate(player, 96);
+      const gate = findNearestExitGate(player, GATE_USE_RANGE);
       if (gate) return gate.opened ? "逃出" : "开门";
     }
     if (findNearestHealableTeammate(player, 92)) return "治疗";
@@ -11486,18 +14180,20 @@
     if (player.action && player.action.kind === "flywheelDash") return `${label} · 飞轮`;
     if (isActor(player)) return `${label} · ${player.magicShowMode === "hunter" ? "送监管" : "转椅"}`;
     if (isPerfumer(player)) return `${label} · ${hasPerfumeUltimate(player) ? "香炉已点燃" : `迷香${player.perfumeUltimateCharges || 0}/${PERFUME_ULTIMATE_CHARGES}`}`;
+    if (isTuner(player)) return `${label} · 共振${Math.floor(getTunerResonance(player))}/${TUNER_RESONANCE_MAX}`;
     if (isFencer(player)) {
       const marks = getFencerStrideMarkCount(player, performance.now());
       if (player.fencerLungePreparing) return `${label} · 突刺准备`;
       if (player.action && player.action.kind === "fencerLunge") return `${label} · 突刺${player.action.turned ? "" : " 可变向"}`;
       if (marks > 0) return `${label} · 健步${marks}`;
     }
-    if (isGeneralRiding(player)) return `${label} · 骑马 ${getGeneralRideSecondsLeft(player)}秒 · 鞭策+${(player.generalRideWhips || 0) * 5}%`;
+    if (isGeneralRiding(player)) return `${label} · 骑马 ${getGeneralRideSecondsLeft(player)}秒 · 怒${Math.floor(player.generalRage || 0)}/${GENERAL_RAGE_MAX}${isGeneralRamReady(player) ? " · 冲撞就绪" : ""}`;
     if (performance.now() < (player.kneeJerkBoostUntil || 0)) return `${label} · 膝跳反射`;
     if (isClockmaker(player) && player.timeDevice) return `${label} · 可回溯`;
     if (hasMedicShield(player)) return `${label} · 护盾`;
     if (performance.now() < (player.medicAdrenalineUntil || 0)) return `${label} · 肾上腺素 ${getMedicAdrenalineSecondsLeft(player)}秒`;
     if ((player.medicAdrenalinePendingDamage || 0) > 0 || (player.medicRescueShockPendingDamage || 0) > 0) return `${label} · 延伤`;
+    if (player.action && player.action.kind === "repairStun") return `${label} · 炸机眩晕`;
     if (player.action && player.action.kind === "repairing" && player.action.calibration) return `${label} · 校准`;
     if (player.action && player.action.kind === "repairing") return `${label} · 修理`;
     if (player.action && player.action.kind === "openingGate") return `${label} · 开门`;
@@ -11545,15 +14241,21 @@
     updateSoulLampAlerts(now);
     updateHunterAssistSystems(dt, now);
     updatePackageProjectiles(dt, now);
+    updateGhostfireProjectiles(dt, now);
+    updateTunerEchoLines(now);
     updateStitchPackPickups(now);
     updateStitchPacks(now);
     updateTimeDevices(now);
     updatePerfumeMists(now);
     updateActorDecoys(dt, now);
+    updateMirrorNoHeartbeatRifts(now);
+    updateMirrorCurtains(now);
+    updateDanceLines(now);
+    updateMirrorRifts(now);
     updateBoneBleed(now);
     updateBorrowedTime(now);
     updateMedicEffects(now);
-    updateGeneralEffects(now);
+    updateGeneralEffects(now, dt);
     updateRampageBadge(now);
     updateWantedBadge(now);
     updateSawbonePendingWipe(now);
@@ -11741,7 +14443,21 @@
 
   function updatePerfumeMists(now) {
     for (let index = perfumeMists.length - 1; index >= 0; index -= 1) {
-      if (now >= perfumeMists[index].until) perfumeMists.splice(index, 1);
+      const mist = perfumeMists[index];
+      if (now >= mist.until) {
+        perfumeMists.splice(index, 1);
+        continue;
+      }
+      if (!mist.stealthedSurvivors) mist.stealthedSurvivors = new Set();
+      getSurvivors().forEach((survivor) => {
+        if (survivor === mist.owner || mist.stealthedSurvivors.has(survivor)) return;
+        if (survivor.escaped || survivor.state === "downed" || survivor.state === "seated" || survivor.state === "carried" || survivor.state === "eliminated") return;
+        if (distanceBetween(survivor, mist) > mist.radius) return;
+        mist.stealthedSurvivors.add(survivor);
+        survivor.invisibleUntil = Math.max(survivor.invisibleUntil || 0, now + PERFUME_ALLY_STEALTH_DURATION);
+        if (hunter.target === survivor) hunter.target = null;
+        if (hunter.targetLock === survivor) clearHunterTargetLock();
+      });
     }
   }
 
@@ -11861,12 +14577,18 @@
       point.workers = getActiveRepairers(point);
       if (point.workers.length === 0) return;
 
+      point.workers.forEach((worker) => {
+        if (worker.kind === "ai" && canUseTunerCipherTune(worker)) useTunerCipherTune(worker, now);
+      });
+      if (point.completed) return;
+
       const progressGain = point.workers.reduce((total, worker) => {
+        addTunerResonance(worker, dt * TUNER_RESONANCE_PER_SECOND);
         return total + ((dt * 1000) / worker.action.duration) * getRepairSpeedMultiplier(worker);
       }, 0);
       const nextProgress = point.progress + progressGain;
       const hasPlayerWorker = point.workers.some((worker) => worker.kind === "player");
-      if (!hasPlayerWorker && isFinalCipherPoint(point) && nextProgress >= FINAL_CIPHER_PRIME_PROGRESS && !shouldPopPrimedFinalCipher(now)) {
+      if (!hasPlayerWorker && isFinalCipherPoint(point) && nextProgress >= FINAL_CIPHER_PRIME_PROGRESS && shouldHoldFinalCipherPoint(point, now)) {
         point.progress = FINAL_CIPHER_PRIME_PROGRESS;
         pauseAIRepairers(point);
         return;
@@ -11880,12 +14602,6 @@
     exitGates.forEach((gate) => {
       if (!areExitsPowered() || gate.opened) return;
       gate.workers = getActiveGateOpeners(gate);
-      if (gate.workers.length === 0) return;
-
-      const progressGain = gate.workers.reduce((total, worker) => {
-        return total + ((dt * 1000) / worker.action.duration) * getSurvivorInteractionSpeedMultiplier(worker);
-      }, 0);
-      gate.progress = Math.min(1, gate.progress + progressGain);
       if (gate.progress >= 1) finishOpenGate(gate);
     });
   }
@@ -11908,7 +14624,7 @@
         worker.action.gate === gate &&
         !worker.escaped &&
         worker.state !== "downed" &&
-        distanceBetween(worker, gate) <= 120;
+        isActorInGateUseRange(worker, gate);
     });
   }
 
@@ -12102,6 +14818,7 @@
     input.touchX = 0;
     input.touchY = 0;
     cancelPackageAim();
+    mirrorCurtainAim = null;
     cancelFencerLungePreparation(player);
     if (touchKnob) touchKnob.style.transform = "translate(0, 0)";
   }
@@ -12133,6 +14850,7 @@
       }
       handlePlayerInteraction(now);
     });
+    bindTouchButton(touchGhostfireButton, () => useGhostfire(performance.now()));
     bindAttackButton();
     bindShadowButton();
     bindSkillButton();
@@ -12172,6 +14890,11 @@
         startPackageAim(player, performance.now(), null, null, event.pointerId, false);
         return;
       }
+      if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+        touchSkillButton.setPointerCapture(event.pointerId);
+        startDancePointAim(performance.now(), null, null, event.pointerId, false);
+        return;
+      }
       if (selectedRole === PLAYER_ROLE.survivor && isFencer(player)) {
         touchSkillButton.setPointerCapture(event.pointerId);
         prepareFencerLunge(player, performance.now());
@@ -12181,10 +14904,16 @@
     });
     touchSkillButton.addEventListener("pointermove", (event) => {
       updatePackageAim(event.clientX, event.clientY, event.pointerId);
+      updateDancePointAim(event.clientX, event.clientY, event.pointerId);
     });
     touchSkillButton.addEventListener("pointerup", (event) => {
       if (selectedRole === PLAYER_ROLE.survivor && isFencer(player)) {
         releaseFencerLunge(player, performance.now());
+        if (touchSkillButton.hasPointerCapture(event.pointerId)) touchSkillButton.releasePointerCapture(event.pointerId);
+        return;
+      }
+      if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+        finishDancePointAim(performance.now(), event.pointerId);
         if (touchSkillButton.hasPointerCapture(event.pointerId)) touchSkillButton.releasePointerCapture(event.pointerId);
         return;
       }
@@ -12193,6 +14922,11 @@
     touchSkillButton.addEventListener("pointercancel", (event) => {
       if (selectedRole === PLAYER_ROLE.survivor && isFencer(player)) {
         cancelFencerLungePreparation(player);
+        if (touchSkillButton.hasPointerCapture(event.pointerId)) touchSkillButton.releasePointerCapture(event.pointerId);
+        return;
+      }
+      if (selectedRole === PLAYER_ROLE.hunter && isDancer()) {
+        dancePointAim = null;
         if (touchSkillButton.hasPointerCapture(event.pointerId)) touchSkillButton.releasePointerCapture(event.pointerId);
         return;
       }
@@ -12246,6 +14980,31 @@
     rememberAimPointer(event.clientX, event.clientY);
     updatePackageAim(event.clientX, event.clientY, event.pointerId);
     updateTwinAim(event.clientX, event.clientY, event.pointerId);
+    updateMirrorCurtainAim(event.clientX, event.clientY, event.pointerId);
+    updateDancePointAim(event.clientX, event.clientY, event.pointerId);
+  });
+  window.addEventListener("pointerdown", (event) => {
+    if (dancePointAim) {
+      if (event.target !== canvas) return;
+      event.preventDefault();
+      dancePointAim.pointerId = event.pointerId;
+      updateDancePointAim(event.clientX, event.clientY, event.pointerId);
+      return;
+    }
+    if (!mirrorCurtainAim) return;
+    if (event.target !== canvas) return;
+    event.preventDefault();
+    beginMirrorCurtainLine(event.clientX, event.clientY, event.pointerId);
+  });
+  window.addEventListener("pointerup", (event) => {
+    if (dancePointAim) {
+      event.preventDefault();
+      finishDancePointAim(performance.now(), event.pointerId);
+      return;
+    }
+    if (!mirrorCurtainAim) return;
+    event.preventDefault();
+    finishMirrorCurtainAim(performance.now(), event.pointerId);
   });
   window.addEventListener("blur", resetMovementInput);
   roleButtons.forEach((button) => {

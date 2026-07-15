@@ -766,6 +766,11 @@ h1 {
   background: rgba(35, 24, 47, 0.82);
 }
 
+.cooldown-chip.is-danger {
+  border-color: rgba(217, 74, 74, 0.72);
+  background: rgba(92, 24, 24, 0.86);
+}
+
 .touch-stick {
   position: absolute;
   z-index: 7;
@@ -833,9 +838,19 @@ h1 {
   background: rgba(93, 178, 255, 0.2);
 }
 
+.touch-action.skill.is-danger {
+  border-color: rgba(217, 74, 74, 0.82);
+  background: rgba(185, 49, 49, 0.36);
+}
+
 .touch-action.shadow {
   border-color: rgba(215, 239, 255, 0.52);
   background: rgba(93, 178, 255, 0.14);
+}
+
+.touch-action.ghostfire {
+  border-color: rgba(104, 222, 196, 0.58);
+  background: rgba(55, 150, 132, 0.24);
 }
 
 .touch-action.is-hidden {
@@ -889,7 +904,7 @@ h1 {
     grid-template-rows: repeat(2, 86px);
     grid-template-areas:
       "skill shadow attack"
-      "use interact .";
+      "use interact ghostfire";
     gap: 14px;
   }
 
@@ -915,9 +930,13 @@ h1 {
     grid-area: skill;
   }
 
-  .touch-action.shadow {
-    grid-area: shadow;
-  }
+.touch-action.shadow {
+  grid-area: shadow;
+}
+
+.touch-action.ghostfire {
+  grid-area: ghostfire;
+}
 }
 
 @media (max-width: 760px) {

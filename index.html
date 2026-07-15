@@ -29,7 +29,7 @@
                 <div class="fun-mode-grid">
                   <button type="button" class="role-button fun-mode" data-mode="kiteSimulator">
                     <span>牵制模拟器</span>
-                    <strong>先选逃生者 · 标准追捕只追你 · 不会淘汰</strong>
+                    <strong>选择逃生者与人机追捕者 · 只追你 · 不会淘汰</strong>
                   </button>
                   <button type="button" class="role-button fun-mode" data-mode="infiniteSawbone">
                     <span>无限车的锯骨</span>
@@ -83,7 +83,11 @@
                 </button>
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="general">
                   <span>将军 · 救人位</span>
-                  <strong>大伤害降为 1 点，Q 骑马，骑马中 Q 鞭策</strong>
+                  <strong>骑马被追击攒怒，满怒 Q 后撤冲刺撞退追捕者</strong>
+                </button>
+                <button type="button" class="character-button survivor" data-character-role="survivor" data-character="tuner">
+                  <span>调律师 · 修机位</span>
+                  <strong>修机积累共振，Q 放出回声带减速追捕者</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="standard">
                   <span>标准追捕者</span>
@@ -104,6 +108,14 @@
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="soulBinder">
                   <span>引魂师</span>
                   <strong>普攻叠魂印，Q 摄魂，E 借魂，F 引魂归途</strong>
+                </button>
+                <button type="button" class="character-button hunter" data-character-role="hunter" data-character="mirrorGhost">
+                  <span>镜鬼</span>
+                  <strong>Q 限时镜幕，E 镜光；裂缝最多 8 条，二阶华镜</strong>
+                </button>
+                <button type="button" class="character-button hunter" data-character-role="hunter" data-character="dancer">
+                  <span>舞者</span>
+                  <strong>Q 舞步拉出侵蚀舞线；一阶 E 旋步，二阶终曲</strong>
                 </button>
                 <button type="button" class="character-button hunter secret is-hidden" data-character-role="hunter" data-character="twinSword" data-hidden-character="true">
                   <span>双生剑仙 · 隐藏监管者</span>
@@ -159,6 +171,10 @@
                   <button type="button" class="badge-button hunter purple" data-badge-role="hunter" data-badge-rarity="purple" data-badge="trumpCard">
                     <span>紫 · 底牌切换</span>
                     <strong>M 重新选择辅助技能，每局一次</strong>
+                  </button>
+                  <button type="button" class="badge-button hunter purple" data-badge-role="hunter" data-badge-rarity="purple" data-badge="confinedSpace">
+                    <span>紫 · 禁闭空间</span>
+                    <strong>追捕者翻窗后封锁该窗 10 秒</strong>
                   </button>
                   <button type="button" class="badge-button hunter blue" data-badge-role="hunter" data-badge-rarity="blue" data-badge="wanted">
                     <span>蓝 · 通缉</span>
@@ -254,10 +270,11 @@
           <button type="button" class="touch-action attack" id="touchAttackButton">攻击</button>
           <button type="button" class="touch-action skill" id="touchSkillButton">技能</button>
           <button type="button" class="touch-action shadow" id="touchShadowButton">灯影</button>
+          <button type="button" class="touch-action ghostfire is-hidden" id="touchGhostfireButton">鬼火吞噬</button>
         </div>
       </section>
     </main>
 
-    <script src="./js/main.js?v=hunter-unlock-tasks-20260627"></script>
+    <script src="./js/main.js?v=tuner-cipher-cooldown-20260715"></script>
   </body>
 </html>
