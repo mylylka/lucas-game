@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Demo_12_UIRefresh</title>
-    <link rel="stylesheet" href="./css/styles.css?v=dev-mode-url-20260627">
+    <link rel="stylesheet" href="./css/styles.css?v=quick-chat-position-20260726">
   </head>
   <body>
     <main class="shell">
@@ -69,9 +69,13 @@
                   <span>学徒 · 辅助位</span>
                   <strong>Q 放针线包，受伤队友拾取后延迟回血</strong>
                 </button>
+                <button type="button" class="character-button survivor" data-character-role="survivor" data-character="navigator">
+                  <span>引航员 · 辅助位</span>
+                  <strong>Q 两段拖拽设定航道，送一名队友定向滑行</strong>
+                </button>
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="medic">
                   <span>军医 · 救人位</span>
-                  <strong>救援更快并给护盾，Q 肾上腺素加速延伤</strong>
+                    <strong>首抓获得应急撤离，Q 肾上腺素 6 秒 40% 加速延伤</strong>
                 </button>
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="perfumer">
                   <span>调香师 · 辅助位</span>
@@ -80,6 +84,10 @@
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="fencer">
                   <span>击剑手 · 牵制位</span>
                   <strong>奔跑转向叠健步，Q 突刺无敌并可变向</strong>
+                </button>
+                <button type="button" class="character-button survivor secret is-hidden" data-character-role="survivor" data-character="antiqueDealer" data-hidden-character="true">
+                  <span>古董商 · 隐藏辅助位</span>
+                  <strong>Q 展开机关箫，1-5 使用扫式、点刺、抡式、云门跳跃与转式加速</strong>
                 </button>
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="general">
                   <span>将军 · 救人位</span>
@@ -154,7 +162,7 @@
                   </button>
                   <button type="button" class="badge-button survivor purple" data-badge-role="survivor" data-badge-rarity="purple" data-badge="flywheel">
                     <span>紫 · 飞轮效应</span>
-                    <strong>L 向前冲刺 3 米，期间无敌，冷却 50 秒</strong>
+                    <strong>L 向前冲刺 0.4 秒，期间无敌且移速翻倍，冷却 50 秒</strong>
                   </button>
                   <button type="button" class="badge-button survivor purple" data-badge-role="survivor" data-badge-rarity="purple" data-badge="kneeJerk">
                     <span>紫 · 膝跳反射</span>
@@ -210,28 +218,60 @@
                   </button>
                   <button type="button" class="assist-button" data-assist="peeper">
                     <span>2 · 插眼</span>
-                    <strong>放置小范围眼位，减交互并爆点</strong>
+                    <strong>放置眼位，范围内交互减速 50% 并指向目标</strong>
+                  </button>
+                  <button type="button" class="assist-button" data-assist="abnormal">
+                    <span>3 · 失常</span>
+                    <strong>1 秒攻击密码机，单台退度 60% 起逐次递减至 10%</strong>
                   </button>
                   <button type="button" class="assist-button" data-assist="patroller">
-                    <span>3 · 巡视者</span>
+                    <span>4 · 巡视者</span>
                     <strong>放出可控制巡视者，咬中控制并减速</strong>
                   </button>
                   <button type="button" class="assist-button" data-assist="blink">
-                    <span>4 · 闪现</span>
+                    <span>5 · 闪现</span>
                     <strong>向前闪现，闪现前出刀延后结算</strong>
                   </button>
                   <button type="button" class="assist-button" data-assist="shift">
-                    <span>5 · 移形</span>
+                    <span>6 · 移形</span>
                     <strong>瞄准放置远端门，并在脚底生成近端门</strong>
                   </button>
                   <button type="button" class="assist-button" data-assist="excitement">
-                    <span>6 · 兴奋</span>
+                    <span>7 · 兴奋</span>
                     <strong>免疫一次眩晕；眩晕中使用会立刻解除</strong>
                   </button>
                 </div>
               </div>
             </div>
           </div>
+        </div>
+
+        <button type="button" class="character-codex-button" id="characterCodexButton" aria-label="角色图鉴" title="角色图鉴">
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+            <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z" />
+            <path d="M8 7h8M8 11h6" />
+          </svg>
+        </button>
+
+        <div class="character-codex-overlay is-hidden" id="characterCodexOverlay" aria-hidden="true">
+          <section class="character-codex" role="dialog" aria-modal="true" aria-labelledby="characterCodexTitle">
+            <header class="character-codex-header">
+              <div>
+                <p class="eyebrow">Character Archive</p>
+                <h2 id="characterCodexTitle">角色图鉴</h2>
+              </div>
+              <button type="button" class="character-codex-close" id="characterCodexClose" aria-label="关闭角色图鉴" title="关闭">×</button>
+            </header>
+            <div class="character-codex-tabs" role="tablist" aria-label="角色阵营">
+              <button type="button" class="character-codex-tab is-selected" data-codex-role="survivor" role="tab" aria-selected="true">逃生者</button>
+              <button type="button" class="character-codex-tab" data-codex-role="hunter" role="tab" aria-selected="false">追捕者</button>
+            </div>
+            <div class="character-codex-layout">
+              <nav class="character-codex-list" id="characterCodexList" aria-label="角色列表"></nav>
+              <article class="character-codex-detail" id="characterCodexDetail" aria-live="polite"></article>
+            </div>
+          </section>
         </div>
 
         <div class="hud hud-top">
@@ -243,11 +283,23 @@
           <div class="cipher-banner" aria-label="密码机进度">
             <strong id="cipherStatusReadout">五台密码机尚未破译</strong>
           </div>
-          <div class="survivor-status-grid" id="survivorStatusGrid" aria-label="求生者状态">
-            <div class="survivor-status-card"></div>
-            <div class="survivor-status-card"></div>
-            <div class="survivor-status-card"></div>
-            <div class="survivor-status-card"></div>
+          <div class="survivor-status-panel">
+            <div class="survivor-status-grid" id="survivorStatusGrid" aria-label="求生者状态">
+              <div class="survivor-status-card"></div>
+              <div class="survivor-status-card"></div>
+              <div class="survivor-status-card"></div>
+              <div class="survivor-status-card"></div>
+            </div>
+            <div class="quick-chat is-hidden" id="quickChat" aria-label="快捷消息">
+              <div class="quick-chat-menu" id="quickChatMenu" hidden>
+                <strong id="quickChatTargetReadout">发送目标：全队</strong>
+                <button type="button" data-quick-chat="rescue">快来救救我</button>
+                <button type="button" data-quick-chat="heal">我需要治疗</button>
+                <button type="button" data-quick-chat="help">我需要帮助</button>
+                <button type="button" data-quick-chat="repair">快修机</button>
+              </div>
+              <button type="button" class="quick-chat-toggle" id="quickChatToggle" aria-expanded="false">消息</button>
+            </div>
           </div>
         </div>
 
@@ -270,11 +322,12 @@
           <button type="button" class="touch-action attack" id="touchAttackButton">攻击</button>
           <button type="button" class="touch-action skill" id="touchSkillButton">技能</button>
           <button type="button" class="touch-action shadow" id="touchShadowButton">灯影</button>
+          <button type="button" class="touch-action actor-phantom is-hidden" id="touchActorPhantomButton">幻影</button>
           <button type="button" class="touch-action ghostfire is-hidden" id="touchGhostfireButton">鬼火吞噬</button>
         </div>
       </section>
     </main>
 
-    <script src="./js/main.js?v=tuner-cipher-cooldown-20260715"></script>
+    <script src="./js/main.js?v=hunter-redlight-20260730"></script>
   </body>
 </html>
