@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Demo_12_UIRefresh</title>
-    <link rel="stylesheet" href="./css/styles.css?v=quick-chat-position-20260726">
+    <link rel="stylesheet" href="./css/styles.css?v=kite-no-cooldown-20260801">
   </head>
   <body>
     <main class="shell">
@@ -85,6 +85,10 @@
                   <span>击剑手 · 牵制位</span>
                   <strong>奔跑转向叠健步，Q 突刺无敌并可变向</strong>
                 </button>
+                <button type="button" class="character-button survivor" data-character-role="survivor" data-character="fighter">
+                  <span>格斗家 · 高难救人位</span>
+                  <strong>J 破缚拳眩晕；眩晕四次后 Q 展开一次擂台</strong>
+                </button>
                 <button type="button" class="character-button survivor secret is-hidden" data-character-role="survivor" data-character="antiqueDealer" data-hidden-character="true">
                   <span>古董商 · 隐藏辅助位</span>
                   <strong>Q 展开机关箫，1-5 使用扫式、点刺、抡式、云门跳跃与转式加速</strong>
@@ -93,17 +97,21 @@
                   <span>将军 · 救人位</span>
                   <strong>骑马被追击攒怒，满怒 Q 后撤冲刺撞退追捕者</strong>
                 </button>
+                <button type="button" class="character-button survivor" data-character-role="survivor" data-character="shieldBearer">
+                  <span>大盾手 · 牵制位</span>
+                  <strong>Q 举盾减伤并承受击退，坚强每分钟抵消一次负面状态</strong>
+                </button>
                 <button type="button" class="character-button survivor" data-character-role="survivor" data-character="tuner">
                   <span>调律师 · 修机位</span>
                   <strong>修机积累共振，Q 放出回声带减速追捕者</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="standard">
-                  <span>标准追捕者</span>
-                  <strong>均衡移速、攻击和后摇</strong>
+                  <span>驯犬师</span>
+                  <strong>Q 自动放犬追踪，咬中造成短暂眩晕</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="brute">
-                  <span>重击追捕者</span>
-                  <strong>攻击更远，移速略慢，后摇更久</strong>
+                  <span>震锤者</span>
+                  <strong>按住 Q 蓄力，松开向前跃击并震荡破板</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="lanternKeeper">
                   <span>提灯人</span>
@@ -115,19 +123,27 @@
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="soulBinder">
                   <span>引魂师</span>
-                  <strong>普攻叠魂印，Q 摄魂，E 借魂，F 引魂归途</strong>
+                  <strong>F 两段魂巡压机，一阶 Q 摄魂，二阶 E 借魂</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="mirrorGhost">
                   <span>镜鬼</span>
-                  <strong>Q 限时镜幕，E 镜光；裂缝最多 8 条，二阶华镜</strong>
+                  <strong>Q 限时镜幕，E 镜光；裂缝最多 6 条，二阶华镜</strong>
                 </button>
                 <button type="button" class="character-button hunter" data-character-role="hunter" data-character="dancer">
                   <span>舞者</span>
                   <strong>Q 舞步拉出侵蚀舞线；一阶 E 旋步，二阶终曲</strong>
                 </button>
+                <button type="button" class="character-button hunter" data-character-role="hunter" data-character="edictor">
+                  <span>禁令官</span>
+                  <strong>Q 布下封界陷阱，E 发射裁定钩子</strong>
+                </button>
+                <button type="button" class="character-button hunter" data-character-role="hunter" data-character="abyss">
+                  <span>“深渊”</span>
+                  <strong>注视积攒深渊值，沉没后以投影扰乱走位</strong>
+                </button>
                 <button type="button" class="character-button hunter secret is-hidden" data-character-role="hunter" data-character="twinSword" data-hidden-character="true">
                   <span>双生剑仙 · 隐藏监管者</span>
-                  <strong>Q 双生切换，E/R 形态技能，F 发射飞剑</strong>
+                  <strong>Q 双生切换，E/R 形态技能，一阶 G 双生之力，F 发射飞剑</strong>
                 </button>
               </div>
               <div class="badge-panel" id="badgePanel" aria-label="徽章天赋">
@@ -150,7 +166,11 @@
                   </button>
                   <button type="button" class="badge-button survivor blue" data-badge-role="survivor" data-badge-rarity="blue" data-badge="ember">
                     <span>蓝 · 余火</span>
-                    <strong>倒地爬行更快，受击加速略久</strong>
+                    <strong>倒地爬行更快，倒地前 3 秒额外加速 35%</strong>
+                  </button>
+                  <button type="button" class="badge-button survivor blue" data-badge-role="survivor" data-badge-rarity="blue" data-badge="physicianBenevolence">
+                    <span>蓝 · 医者仁心</span>
+                    <strong>每分钟一次，治疗成功后令目标额外回复 50 裂伤</strong>
                   </button>
                   <button type="button" class="badge-button survivor purple" data-badge-role="survivor" data-badge-rarity="purple" data-badge="adrenaline">
                     <span>紫 · 回光返照</span>
@@ -204,7 +224,21 @@
                     <span>蓝 · 收刀</span>
                     <strong>命中擦刀和空刀后摇略短</strong>
                   </button>
+                  <button type="button" class="badge-button hunter blue" data-badge-role="hunter" data-badge-rarity="blue" data-badge="criticalPoint">
+                    <span>蓝 · 临界点</span>
+                    <strong>五台机破译后，低于一格的技能伤害补至一格，每 20 秒一次</strong>
+                  </button>
                 </div>
+              </div>
+              <div class="practice-options is-hidden" id="kiteSimulatorOptions" aria-label="牵制模拟器训练规则">
+                <div class="badge-header">
+                  <span>牵制训练</span>
+                  <strong>仅影响玩家</strong>
+                </div>
+                <button type="button" class="practice-option-button" id="kiteSimulatorNoCooldownButton" aria-pressed="false">
+                  <span>无冷却</span>
+                  <strong>玩家角色技能与徽章技能立即可用，可反复练习飞轮</strong>
+                </button>
               </div>
               <div class="assist-panel is-hidden" id="assistPanel" aria-label="辅助技能">
                 <div class="badge-header">
@@ -238,7 +272,7 @@
                   </button>
                   <button type="button" class="assist-button" data-assist="excitement">
                     <span>7 · 兴奋</span>
-                    <strong>免疫一次眩晕；眩晕中使用会立刻解除</strong>
+                    <strong>可在牵人中释放；免疫一次眩晕，眩晕中使用会立刻解除</strong>
                   </button>
                 </div>
               </div>
@@ -294,6 +328,8 @@
               <div class="quick-chat-menu" id="quickChatMenu" hidden>
                 <strong id="quickChatTargetReadout">发送目标：全队</strong>
                 <button type="button" data-quick-chat="rescue">快来救救我</button>
+                <button type="button" data-quick-chat="rescueClaim">我来救人</button>
+                <button type="button" data-quick-chat="wait">先不要走</button>
                 <button type="button" data-quick-chat="heal">我需要治疗</button>
                 <button type="button" data-quick-chat="help">我需要帮助</button>
                 <button type="button" data-quick-chat="repair">快修机</button>
@@ -328,6 +364,6 @@
       </section>
     </main>
 
-    <script src="./js/main.js?v=hunter-redlight-20260730"></script>
+    <script src="./js/main.js?v=abyss-projection-pallet-stun-20260824"></script>
   </body>
 </html>

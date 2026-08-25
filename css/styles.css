@@ -452,6 +452,7 @@ canvas {
 .hidden-unlock.is-hidden,
 .badge-panel.is-hidden,
 .assist-panel.is-hidden,
+.practice-options.is-hidden,
 .hunter-survivor-preview.is-hidden {
   display: none;
 }
@@ -679,7 +680,8 @@ canvas {
 }
 
 .badge-panel,
-.assist-panel {
+.assist-panel,
+.practice-options {
   order: 2;
   display: grid;
   gap: 10px;
@@ -709,18 +711,21 @@ canvas {
 }
 
 .badge-button,
-.assist-button {
+.assist-button,
+.practice-option-button {
   min-height: 78px;
   padding: 13px;
 }
 
 .badge-button span,
-.assist-button span {
+.assist-button span,
+.practice-option-button span {
   font-size: 16px;
 }
 
 .badge-button strong,
-.assist-button strong {
+.assist-button strong,
+.practice-option-button strong {
   margin-top: 8px;
   font-size: 12px;
 }
@@ -755,6 +760,16 @@ canvas {
 }
 
 .assist-button.is-selected {
+  border-color: rgba(93, 178, 255, 0.82);
+  background: rgba(93, 178, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(93, 178, 255, 0.22);
+}
+
+.practice-option-button {
+  text-align: left;
+}
+
+.practice-option-button.is-selected {
   border-color: rgba(93, 178, 255, 0.82);
   background: rgba(93, 178, 255, 0.18);
   box-shadow: inset 0 0 0 1px rgba(93, 178, 255, 0.22);
